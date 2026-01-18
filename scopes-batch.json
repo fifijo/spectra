@@ -1,0 +1,29 @@
+{
+  "url": "http://localhost:5173",
+  "scopes": [
+    {
+      "name": "Dashboard",
+      "page": "/",
+      "scope": "stats grid and recent sales",
+      "description": "Test dashboard overview and statistics"
+    },
+    {
+      "name": "Tasks",
+      "page": "/tasks",
+      "scope": "task management",
+      "description": "Test task creation, completion, and filtering"
+    },
+    {
+      "name": "Products",
+      "page": "/products",
+      "scope": "product catalog",
+      "description": "Test product search, filtering, and cart"
+    },
+    {
+      "name": "Settings",
+      "page": "/settings",
+      "scope": "user settings",
+      "description": "Test profile, notifications, and appearance settings"
+    }
+  ]
+}

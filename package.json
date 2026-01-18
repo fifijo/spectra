@@ -1,0 +1,21 @@
+{
+  "name": "spectra",
+  "version": "1.0.0",
+  "description": "Full-spectrum test automation using AI agents with Playwright",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "report": "playwright show-report .spectra/output/reports",
+    "spectra": "./spectra"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.18.3",
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@types/node": "^25.0.9",
+    "typescript": "^5.9.3"
+  }
+}

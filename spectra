@@ -1,0 +1,243 @@
+#!/bin/bash
+
+# ◐◑◒ SPECTRA - Full-Spectrum Test Automation
+# Main CLI
+
+set -e
+
+# Colors
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
+NC='\033[0m'
+
+# Configuration
+TIMEOUT=300
+
+# Print banner
+print_banner() {
+    echo ""
+    echo -e "${CYAN}   ◐ ◑ ◒${NC}"
+    echo -e "${CYAN}  SPECTRA${NC}"
+    echo -e "  ${MAGENTA}Full-spectrum test automation${NC}"
+    echo "  ─────────────────────────────────"
+    echo ""
+}
+
+# Show usage
+usage() {
+    print_banner
+    echo "Usage: spectra [options]"
+    echo ""
+    echo "Options:"
+    echo "  -u, --url URL       Target URL (required, or set SPECTRA_URL)"
+    echo "  -p, --page PAGE     Specific page to test (e.g., /checkout)"
+    echo "  -s, --scope TEXT    Feature to focus on (e.g., 'payment form')"
+    echo "  -f, --file FILE     Scope file with detailed requirements"
+    echo "  -m, --manual        Force manual mode (use Cursor prompts)"
+    echo "  -h, --help          Show this help"
+    echo ""
+    echo "Examples:"
+    echo "  spectra --url http://localhost:3000"
+    echo "  spectra -u http://localhost:3000 -p /checkout -s 'payment form'"
+    echo "  spectra -u http://localhost:3000 -f SCOPE.md"
+    echo ""
+    exit 0
+}
+
+# Parse arguments
+FORCE_MANUAL=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -u|--url) SPECTRA_URL="$2"; shift 2 ;;
+        -p|--page) TARGET_PAGE="$2"; shift 2 ;;
+        -s|--scope) TEST_SCOPE="$2"; shift 2 ;;
+        -f|--file) SCOPE_FILE="$2"; shift 2 ;;
+        -m|--manual) FORCE_MANUAL=true; shift ;;
+        -h|--help) usage ;;
+        *) echo -e "${RED}Unknown: $1${NC}"; usage ;;
+    esac
+done
+
+# Validate URL
+if [ -z "$SPECTRA_URL" ]; then
+    echo -e "${RED}Error: URL required. Use --url or set SPECTRA_URL${NC}"
+    usage
+fi
+
+# Detect CLI mode
+detect_mode() {
+    if [ "$FORCE_MANUAL" = true ]; then
+        echo "manual"
+    elif command -v cursor-agent &> /dev/null; then
+        echo "cursor-agent"
+    elif command -v claude &> /dev/null; then
+        echo "claude-code"
+    else
+        echo "manual"
+    fi
+}
+
+MODE=$(detect_mode)
+
+# Create scope context
+create_scope_context() {
+    mkdir -p .spectra/agents/shared
+    cat > .spectra/agents/shared/current-scope.md << EOF
+# Current Spectra Scope
+
+## Target
+- **URL**: ${SPECTRA_URL}
+$([ -n "$TARGET_PAGE" ] && echo "- **Page**: ${TARGET_PAGE}")
+$([ -n "$TARGET_PAGE" ] && echo "- **Full URL**: ${SPECTRA_URL}${TARGET_PAGE}")
+
+$([ -n "$TEST_SCOPE" ] && echo "## Feature Focus
+Test ONLY: **${TEST_SCOPE}**
+Ignore other features on the page.")
+
+$([ -n "$SCOPE_FILE" ] && [ -f "$SCOPE_FILE" ] && echo "## Detailed Requirements
+$(cat "$SCOPE_FILE")")
+
+## Instructions
+- If a specific page is given, navigate there directly
+- If a feature scope is given, test ONLY that feature
+- Ignore unrelated elements on the same page
+EOF
+}
+
+# Clean previous outputs
+clean() {
+    rm -f .spectra/output/plans/.complete
+    rm -f .spectra/output/tests/.complete
+    rm -f .spectra/output/reports/.complete
+    rm -f .spectra/output/plans/test-plan.md
+    rm -f .spectra/output/reports/healing-report.md
+}
+
+# Build agent prompt
+build_prompt() {
+    local agent=$1
+    local instruction=$2
+    local completion_path=$3
+    
+    echo "SCOPE: First check .spectra/agents/shared/current-scope.md for constraints.
+INSTRUCTIONS: Read .spectra/agents/${agent}/AGENT.md for full details.
+
+${instruction}
+
+When complete, create: ${completion_path}"
+}
+
+# Run with cursor-agent
+run_cursor_agent() {
+    local name=$1
+    local prompt=$2
+    
+    echo -e "${BLUE}Running ${name} with cursor-agent...${NC}"
+    cursor-agent --print --force "$prompt" 2>&1 | tee ".spectra/output/${name}.log"
+}
+
+# Run with claude CLI
+run_claude_code() {
+    local name=$1
+    local prompt=$2
+    
+    echo -e "${BLUE}Running ${name} with Claude Code...${NC}"
+    echo "$prompt" | claude --mcp 2>&1 | tee ".spectra/output/${name}.log"
+}
+
+# Run manual mode
+run_manual() {
+    local name=$1
+    local color=$2
+    local emoji=$3
+    
+    echo ""
+    echo -e "${color}═══════════════════════════════════════════════════════${NC}"
+    echo -e "${color}  ${emoji} ${name^^}${NC}"
+    echo -e "${color}═══════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo "Open Cursor and use the agent prompt:"
+    echo -e "  ${CYAN}.spectra/agents/${name}/prompt.md${NC}"
+    echo ""
+    read -p "Press Enter when ${name} is complete..."
+}
+
+# Run agent
+run_agent() {
+    local name=$1
+    local color=$2
+    local emoji=$3
+    local prompt=$4
+    
+    echo ""
+    echo -e "${color}═══════════════════════════════════════════════════════${NC}"
+    echo -e "${color}  ${emoji} ${name^^}${NC}"
+    echo -e "${color}═══════════════════════════════════════════════════════${NC}"
+    echo ""
+    
+    case $MODE in
+        cursor-agent)
+            run_cursor_agent "$name" "$prompt"
+            ;;
+        claude-code)
+            run_claude_code "$name" "$prompt"
+            ;;
+        manual)
+            echo "$prompt" > ".spectra/agents/${name}/current-prompt.md"
+            run_manual "$name" "$color" "$emoji"
+            ;;
+    esac
+}
+
+# Main pipeline
+main() {
+    print_banner
+    
+    echo -e "Mode: ${CYAN}${MODE}${NC}"
+    echo -e "Target: ${CYAN}${SPECTRA_URL}${NC}"
+    [ -n "$TARGET_PAGE" ] && echo -e "Page: ${CYAN}${TARGET_PAGE}${NC}"
+    [ -n "$TEST_SCOPE" ] && echo -e "Scope: ${CYAN}${TEST_SCOPE}${NC}"
+    echo ""
+    
+    create_scope_context
+    clean
+    
+    # 🔵 Planner
+    run_agent "planner" "$BLUE" "🔵" \
+        "$(build_prompt planner 'Explore the app with Playwright MCP. Write test plan to .spectra/output/plans/test-plan.md' '.spectra/output/plans/.complete')"
+    
+    # 🟢 Generator
+    run_agent "generator" "$GREEN" "🟢" \
+        "$(build_prompt generator 'Read .spectra/output/plans/test-plan.md. Generate Page Objects in pages/ and tests in tests/' '.spectra/output/tests/.complete')"
+    
+    # 🟣 Healer
+    run_agent "healer" "$MAGENTA" "🟣" \
+        "$(build_prompt healer 'Run pnpm test. Fix failures using Playwright MCP. Write report to .spectra/output/reports/healing-report.md' '.spectra/output/reports/.complete')"
+    
+    # Summary
+    echo ""
+    echo -e "${CYAN}═══════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}  ✨ SPECTRUM COMPLETE${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════${NC}"
+    echo ""
+    
+    # Count files
+    local page_count=$(ls -1 pages/*.ts 2>/dev/null | wc -l | tr -d ' ')
+    local test_count=$(ls -1 tests/*.spec.ts 2>/dev/null | wc -l | tr -d ' ')
+    
+    echo "Generated:"
+    echo "  📄 Page Objects: $page_count"
+    echo "  🧪 Test files: $test_count"
+    echo ""
+    echo "Commands:"
+    echo "  pnpm test          Run all tests"
+    echo "  pnpm test:ui       Run with UI"
+    echo "  pnpm report        View report"
+    echo ""
+}
+
+main

@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Spectra outputs
+.spectra/output/
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+
+# Keep agent definitions
+!.spectra/agents/

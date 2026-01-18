@@ -1,0 +1,83 @@
+# Spectra CI - Optional GitHub Actions workflow
+#
+# This workflow runs Playwright tests on push/PR to main.
+# To enable: ensure this file is committed to your repository.
+#
+# Prerequisites:
+# - Your app must be buildable/runnable in CI
+# - Update the "Start application" step for your app
+
+name: Playwright Tests
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  test:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      # ============================================
+      # UPDATE THIS SECTION FOR YOUR APPLICATION
+      # ============================================
+      - name: Install dummy-test-app dependencies
+        working-directory: dummy-test-app
+        run: pnpm install
+
+      - name: Start application
+        working-directory: dummy-test-app
+        run: pnpm dev &
+
+      - name: Wait for application
+        run: |
+          echo "Waiting for app to start..."
+          timeout 30 bash -c 'until curl -s http://localhost:5173 > /dev/null; do sleep 1; done'
+          echo "App is ready!"
+      # ============================================
+
+      - name: Run Playwright tests
+        run: pnpm test
+        env:
+          CI: true
+          SPECTRA_URL: http://localhost:5173
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: .spectra/output/reports/
+          retention-days: 30
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-artifacts
+          path: |
+            .spectra/output/test-results/
+            .spectra/output/reports/results.json
+          retention-days: 7
