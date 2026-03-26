@@ -32,6 +32,9 @@
     "test:seed": "playwright test tests/e2e/seed.spec.ts",
     "report": "playwright show-report .spectra/output/reports",
     "spectra": "node dist/bin.js",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "test:unit:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "clean": "rm -rf dist"
   },
@@ -62,7 +65,8 @@
   "devDependencies": {
     "@playwright/test": "^1.57.0",
     "@types/node": "^25.0.9",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.2"
   },
   "repository": {
     "type": "git",
