@@ -1,14 +1,10 @@
-#!/usr/bin/env node
-
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseArgs } from 'node:util';
 
 import { buildPrompt, runAgent } from './agents/runner.js';
 import { initAgents, scaffold } from './agents/init.js';
 import { createScopeContext } from './utils/scope.js';
 import { detectMode } from './utils/detect-mode.js';
-import { DEFAULTS } from './utils/constants.js';
 import { logger } from './utils/logger.js';
 
 export interface SpectraOptions {
@@ -20,65 +16,6 @@ export interface SpectraOptions {
   manual?: boolean;
   init?: boolean;
   debug?: boolean;
-}
-
-function printUsage(): void {
-  logger.banner();
-  logger.plain('Usage: spectra [options]');
-  logger.plain('');
-  logger.plain('Commands:');
-  logger.plain('  --init              Scaffold project structure and agent templates');
-  logger.plain('');
-  logger.plain('Options:');
-  logger.plain('  -u, --url URL       Target URL (required, or set SPECTRA_URL)');
-  logger.plain('  -p, --page PAGE     Specific page to test (e.g., /checkout)');
-  logger.plain('  -s, --scope TEXT    Feature to focus on (e.g., "payment form")');
-  logger.plain('  -f, --file FILE     Scope file with detailed requirements');
-  logger.plain('  -b, --batch FILE    JSON file with scope definitions');
-  logger.plain('  -m, --manual        Force manual mode (use IDE prompts)');
-  logger.plain('      --debug         Enable debug output');
-  logger.plain('  -h, --help          Show this help');
-  logger.plain('');
-  logger.plain('Examples:');
-  logger.plain('  spectra --init');
-  logger.plain('  spectra --url http://localhost:5173');
-  logger.plain('  spectra -u http://localhost:5173 -p /checkout -s "payment form"');
-  logger.plain('  spectra -u http://localhost:5173 -f SCOPE.md');
-  logger.plain('  spectra --batch scopes-batch.json');
-  logger.plain('');
-}
-
-function parseCliArgs(): SpectraOptions {
-  const { values } = parseArgs({
-    options: {
-      url:    { type: 'string', short: 'u' },
-      page:   { type: 'string', short: 'p' },
-      scope:  { type: 'string', short: 's' },
-      file:   { type: 'string', short: 'f' },
-      batch:  { type: 'string', short: 'b' },
-      manual: { type: 'boolean', short: 'm', default: false },
-      init:   { type: 'boolean', default: false },
-      debug:  { type: 'boolean', default: false },
-      help:   { type: 'boolean', short: 'h', default: false },
-    },
-    strict: true,
-  });
-
-  if (values.help) {
-    printUsage();
-    process.exit(0);
-  }
-
-  return {
-    url:    values.url,
-    page:   values.page,
-    scope:  values.scope,
-    file:   values.file,
-    batch:  values.batch,
-    manual: values.manual,
-    init:   values.init,
-    debug:  values.debug,
-  };
 }
 
 function clean(cwd: string): void {
@@ -165,7 +102,7 @@ export function run(options: SpectraOptions = {}): void {
   const url = options.url ?? process.env['SPECTRA_URL'] ?? '';
   if (!url) {
     logger.error('Error: URL required. Use --url or set SPECTRA_URL');
-    printUsage();
+    logger.plain('Run spectra --help for usage information.');
     process.exit(1);
   }
 
@@ -278,17 +215,4 @@ export function run(options: SpectraOptions = {}): void {
   logger.plain('  pnpm test:ui       Run with UI');
   logger.plain('  pnpm report        View report');
   logger.plain('');
-}
-
-// Direct execution (bin entry point)
-const isDirectRun =
-  process.argv[1] &&
-  (process.argv[1].endsWith('/spectra') ||
-    process.argv[1].endsWith('\\spectra') ||
-    path.basename(process.argv[1]) === 'cli.js' ||
-    path.basename(process.argv[1]) === 'cli.ts');
-
-if (isDirectRun) {
-  const opts = parseCliArgs();
-  run(opts);
 }

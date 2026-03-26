@@ -4,7 +4,7 @@ export type CliMode = 'cursor-agent' | 'claude-code' | 'manual';
 
 function commandExists(cmd: string): boolean {
   try {
-    execSync(`command -v ${cmd}`, { stdio: 'ignore' });
+    execSync(process.platform === 'win32' ? `where ${cmd}` : `command -v ${cmd}`, { stdio: 'ignore' });
     return true;
   } catch {
     return false;
