@@ -10,9 +10,27 @@
 
 ## Installation
 
+### Option A: Install as npm package
+
 ```bash
-chmod +x setup-spectra.sh
-./setup-spectra.sh
+pnpm add -D spectra-test-automation @playwright/test
+npx spectra --init
+pnpm exec playwright install chromium
+```
+
+### Option B: Install from Git
+
+```bash
+pnpm add -D "git+https://github.com/fifijo/spectra.git" @playwright/test
+```
+
+### Option C: Clone and develop locally
+
+```bash
+git clone https://github.com/fifijo/spectra.git
+cd spectra
+pnpm install
+pnpm run build
 ```
 
 ---
@@ -21,34 +39,30 @@ chmod +x setup-spectra.sh
 
 ```bash
 # Full spectrum scan
-./spectra --url http://localhost:5173
+npx spectra --url http://localhost:5173
 
 # Single page
-./spectra -u http://localhost:5173 -p /login
+npx spectra -u http://localhost:5173 -p /login
 
 # Feature scope
-./spectra -u http://localhost:5173 -p /checkout -s "payment form"
+npx spectra -u http://localhost:5173 -p /checkout -s "payment form"
 
 # Scope file
-./spectra -u http://localhost:5173 -f SCOPE.md
+npx spectra -u http://localhost:5173 -f SCOPE.md
 
 # Manual mode
-./spectra -u http://localhost:5173 -m
+npx spectra -u http://localhost:5173 -m
 
-# Batch mode - multiple scopes
-./spectra -u http://localhost:5173 --files SCOPE-login.md SCOPE-payment.md
-./spectra -u http://localhost:5173 --scopes-dir scopes/
-./spectra --batch scopes-batch.json
+# Batch mode - multiple scopes from JSON config
+npx spectra -b scopes-batch.json
 
 # Debug mode
-./spectra -u http://localhost:5173 --debug
+npx spectra -u http://localhost:5173 --debug
 ```
 
 ---
 
 ## CLI Options
-
-### Single Scope (`spectra`)
 
 | Option | Short | Description |
 |--------|-------|-------------|
@@ -56,17 +70,11 @@ chmod +x setup-spectra.sh
 | `--page` | `-p` | Specific page |
 | `--scope` | `-s` | Feature focus |
 | `--file` | `-f` | Scope file |
+| `--batch` | `-b` | JSON config file |
 | `--manual` | `-m` | Manual mode |
+| `--init` | | Scaffold project structure |
 | `--debug` | | Enable debug output |
 | `--help` | `-h` | Show help |
-
-### Batch Mode Options
-
-| Option | Description |
-|--------|-------------|
-| `--files FILE1 ...` | Multiple scope files |
-| `--scopes-dir DIR` | Directory with SCOPE-*.md files |
-| `--batch FILE` | JSON config file |
 
 ---
 
@@ -86,6 +94,7 @@ chmod +x setup-spectra.sh
 pnpm test                        # Run all tests (chromium)
 pnpm test:headed                 # With browser visible
 pnpm test:ui                     # Playwright UI
+pnpm test:seed                   # Run seed spec only
 pnpm report                      # HTML report
 
 # Cross-browser testing
@@ -106,23 +115,35 @@ SPECTRA_TAGS=@smoke pnpm test    # Via env var
 ## Key Files
 
 ```
-spectra                 # Main CLI (single + batch mode)
-.spectra/
-  agents/               # Agent definitions
-  lib/common.sh         # Shared utilities
-  output/               # Generated outputs
-    plans/test-plan.md  # Test plan
-    reports/            # Results & reports
-      status.json       # Machine-readable status
-    test-results/       # Playwright test results
-pages/                  # Page Objects
-tests/                  # Test files
-fixtures/pages.ts       # Reusable test fixtures
-docs/                   # Documentation
-  SCOPE-template.md     # Scoping template
-scopes-batch.json       # Batch config example
-playwright.config.ts    # Playwright config
-tsconfig.json           # TypeScript config
+src/                        # TypeScript source (CLI & library)
+  bin.ts                    # CLI entry point
+  cli.ts                    # Public API (library module)
+  agents/                   # Agent runner & scaffolding
+  utils/                    # Shared utilities
+dist/                       # Compiled output (npm package)
+templates/                  # Shipped with the package
+  agents/                   # Agent definitions (Planner, Generator, Healer)
+  docs/                     # Scope template
+  fixtures/                 # Test fixture template
+specs/                      # Pipeline gate docs & Markdown plans
+tests/e2e/                  # End-to-end seed & integration tests
+.spectra/                   # Spectra configuration (generated via --init)
+  agents/                   # Agent definitions
+  output/                   # Generated outputs
+    plans/test-plan.md      # Test plan
+    reports/                # Results & reports
+      status.json           # Machine-readable status
+    test-results/           # Playwright test results
+pages/                      # Generated Page Objects
+tests/                      # Generated test files
+fixtures/pages.ts           # Reusable test fixtures
+docs/                       # Documentation
+  SCOPE-template.md         # Scoping template
+scopes-batch.json           # Batch config example
+playwright.config.ts        # Playwright config
+tsconfig.json               # TypeScript build config
+tsconfig.test.json          # TypeScript config for Playwright tests
+package.json                # npm package definition
 ```
 
 ---
@@ -164,11 +185,10 @@ Use tags to organize and filter tests:
 | Issue | Fix |
 |-------|-----|
 | MCP not connecting | Restart Cursor |
-| Browser not opening | `pnpm exec playwright install` |
+| Browser not opening | `pnpm exec playwright install chromium` |
 | Tests failing | Check healing report |
 | No CLI | Use `--manual` mode |
-| Batch `--batch` needs jq | `brew install jq` (macOS) or `apt install jq` (Linux) |
-| Scope files not found | Check file paths in JSON or directory |
+| Scope files not found | Check file paths in batch JSON config |
 | Invalid URL | Ensure URL starts with `http://` or `https://` |
 
 ---
@@ -177,6 +197,6 @@ Use tags to organize and filter tests:
 
 ◐ ◑ ◒
 
-[GitHub](https://github.com/yourusername/spectra) • [Docs](https://spectra.dev)
+[GitHub](https://github.com/fifijo/spectra)
 
 </div>
