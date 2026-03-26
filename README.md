@@ -153,14 +153,33 @@ Generates clean, maintainable code:
 
 ### Installation
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/spectra.git
-cd spectra
+#### Option A: Install as npm package
 
-# Run setup
-chmod +x setup-spectra.sh
-./setup-spectra.sh
+```bash
+# Install in your project
+pnpm add -D spectra-test-automation @playwright/test
+
+# Scaffold project structure
+npx spectra --init
+
+# Install Playwright browsers
+pnpm exec playwright install chromium
+```
+
+#### Option B: Install from Git
+
+```bash
+# Install directly from the repository
+pnpm add -D "git+https://github.com/fifijo/spectra.git" @playwright/test
+```
+
+#### Option C: Clone and develop locally
+
+```bash
+git clone https://github.com/fifijo/spectra.git
+cd spectra
+pnpm install
+pnpm run build
 ```
 
 ### Generate Your First Tests
@@ -169,8 +188,11 @@ chmod +x setup-spectra.sh
 # Start your web application (in another terminal)
 cd /path/to/your/app && pnpm dev
 
+# Run the seed spec to verify environment
+pnpm test:seed
+
 # Run Spectra
-./spectra --url http://localhost:5173
+npx spectra --url http://localhost:5173
 ```
 
 That's it! Check the `tests/` folder for your generated tests.
@@ -476,8 +498,29 @@ Perfect for comprehensive test coverage across your entire application!
 ```
 spectra/
 │
-├── 📜 spectra                   # Main CLI (single + batch mode)
-├── 📜 setup-spectra.sh          # Setup script
+├── 📂 src/                      # TypeScript source (CLI & library)
+│   ├── cli.ts                   # CLI entry point
+│   ├── index.ts                 # Public API exports
+│   ├── 📂 agents/               # Agent runner & scaffolding
+│   └── 📂 utils/                # Shared utilities
+│
+├── 📂 dist/                     # Compiled output (npm package)
+│
+├── 📂 templates/                # Shipped with the package
+│   ├── 📂 agents/               # Agent definitions (Planner, Generator, Healer)
+│   ├── 📂 docs/                 # Scope template
+│   └── 📂 fixtures/             # Test fixture template
+│
+├── 📂 specs/                    # Pipeline gate docs & Markdown plans
+│   ├── PLANNER-GATE.md          # Planner review checklist
+│   ├── GENERATOR-GATE.md        # Generator review rules
+│   ├── CI-HEALER-POLICY.md      # CI traces, Healer limits, triage
+│   └── PILOT.md                 # Verification pilot instructions
+│
+├── 📂 tests/e2e/                # End-to-end seed & integration tests
+│   └── seed.spec.ts             # Environment readiness contract
+│
+├── 📜 setup-spectra.sh          # Legacy setup script
 │
 ├── 📂 .github/                  # CI/CD configuration (optional)
 │   └── workflows/
@@ -490,7 +533,7 @@ spectra/
 │   └── WALKTHROUGH.md           # Walkthrough guide
 ├── 📋 scopes-batch.json         # Example batch config
 │
-├── 📂 .spectra/                 # Spectra configuration
+├── 📂 .spectra/                 # Spectra configuration (generated via --init)
 │   ├── 📂 agents/
 │   │   ├── 📂 planner/
 │   │   │   ├── AGENT.md         # Planner instructions
@@ -504,9 +547,6 @@ spectra/
 │   │   └── 📂 shared/
 │   │       ├── context.md        # Static shared context
 │   │       └── current-scope.md  # Dynamically created scope (runtime)
-│   │
-│   ├── 📂 lib/                  # Shared utilities
-│   │   └── common.sh            # CLI helper functions
 │   │
 │   └── 📂 output/               # Agent outputs
 │       ├── 📂 plans/
@@ -534,8 +574,9 @@ spectra/
 │   └── pages.ts                 # Reusable page fixtures
 │
 ├── ⚙️ playwright.config.ts
-├── ⚙️ tsconfig.json             # TypeScript configuration
-└── 📦 package.json
+├── ⚙️ tsconfig.json             # TypeScript build config
+├── ⚙️ tsconfig.test.json        # TypeScript config for Playwright tests
+└── 📦 package.json              # npm package definition
 ```
 
 ---
@@ -840,15 +881,66 @@ Use `--page` and `--scope` to narrow focus:
 
 ---
 
+## 📦 Publishing to npm
+
+### Build and publish
+
+```bash
+# Build the package
+pnpm run build
+
+# Publish to npm registry
+npm publish
+
+# Or publish to a private registry
+npm publish --registry https://your-registry.example.com
+```
+
+### Install from private registry
+
+Add a `.npmrc` to consuming projects:
+
+```ini
+@yourorg:registry=https://your-registry.example.com
+//your-registry.example.com/:_authToken=${NPM_TOKEN}
+```
+
+Then install:
+
+```bash
+pnpm add -D @yourorg/spectra-test-automation @playwright/test
+```
+
+### Install from Git (Bitbucket / GitHub)
+
+```bash
+# SSH
+pnpm add -D "git+ssh://git@bitbucket.org/yourorg/spectra.git"
+
+# HTTPS
+pnpm add -D "git+https://github.com/fifijo/spectra.git"
+```
+
+### Versioning
+
+Follow [semver](https://semver.org/):
+- **Patch** (`0.1.1`): bug fixes, doc updates
+- **Minor** (`0.2.0`): new features, new agent templates
+- **Major** (`1.0.0`): breaking CLI changes or peer `@playwright/test` range changes
+
+---
+
 ## 🤝 Contributing
 
 Contributions are welcome!
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+3. Install dependencies: `pnpm install`
+4. Build: `pnpm run build`
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
 ---
 
