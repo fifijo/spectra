@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync, execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -17,7 +17,7 @@ export interface AgentRunOptions {
 function runCursorAgent(name: string, prompt: string, outputDir: string) {
   logger.info(`Running ${name} with cursor-agent...`);
   try {
-    execSync(`cursor-agent --print --force "${prompt.replace(/"/g, '\\"')}"`, {
+    execFileSync('cursor-agent', ['--print', '--force', prompt], {
       stdio: ['inherit', 'pipe', 'pipe'],
     });
   } catch (err) {
@@ -30,8 +30,9 @@ function runCursorAgent(name: string, prompt: string, outputDir: string) {
 function runClaudeCode(name: string, prompt: string, outputDir: string) {
   logger.info(`Running ${name} with Claude Code...`);
   try {
-    execSync(`echo "${prompt.replace(/"/g, '\\"')}" | claude --mcp`, {
-      stdio: ['inherit', 'pipe', 'pipe'],
+    execSync('claude --mcp', {
+      input: prompt,
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
   } catch (err) {
     const logPath = path.join(outputDir, `${name}.log`);

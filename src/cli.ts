@@ -114,6 +114,54 @@ export function run(options: SpectraOptions = {}): void {
     return;
   }
 
+  // --batch: read scopes from JSON file and run each sequentially
+  if (options.batch) {
+    const batchPath = path.resolve(cwd, options.batch);
+    if (!fs.existsSync(batchPath)) {
+      logger.error(`Batch file not found: ${batchPath}`);
+      process.exit(1);
+    }
+
+    let batchConfig: { url?: string; scopes: Array<{ name?: string; file: string; description?: string }> };
+    try {
+      batchConfig = JSON.parse(fs.readFileSync(batchPath, 'utf-8'));
+    } catch {
+      logger.error(`Failed to parse batch file: ${batchPath}`);
+      process.exit(1);
+    }
+
+    const batchUrl = options.url ?? batchConfig.url ?? process.env['SPECTRA_URL'] ?? '';
+    if (!batchUrl) {
+      logger.error('Error: URL required. Use --url, set SPECTRA_URL, or add "url" to batch config');
+      process.exit(1);
+    }
+
+    if (!Array.isArray(batchConfig.scopes) || batchConfig.scopes.length === 0) {
+      logger.error('Batch config must have a non-empty "scopes" array');
+      process.exit(1);
+    }
+
+    logger.banner();
+    logger.info(`Batch mode: ${batchConfig.scopes.length} scope(s)`);
+    logger.plain('');
+
+    for (const [i, scopeDef] of batchConfig.scopes.entries()) {
+      const label = scopeDef.name ?? `Scope ${i + 1}`;
+      logger.separator('blue', `📋 ${label}`);
+      run({
+        url: batchUrl,
+        file: scopeDef.file,
+        manual: options.manual,
+        debug: options.debug,
+      });
+    }
+
+    logger.separator('blue', '✨ BATCH COMPLETE');
+    logger.plain(`  Scopes processed: ${batchConfig.scopes.length}`);
+    logger.plain('');
+    return;
+  }
+
   const url = options.url ?? process.env['SPECTRA_URL'] ?? '';
   if (!url) {
     logger.error('Error: URL required. Use --url or set SPECTRA_URL');
@@ -236,8 +284,9 @@ export function run(options: SpectraOptions = {}): void {
 const isDirectRun =
   process.argv[1] &&
   (process.argv[1].endsWith('/spectra') ||
-    process.argv[1].endsWith('/cli.js') ||
-    process.argv[1].endsWith('/src/cli.ts'));
+    process.argv[1].endsWith('\\spectra') ||
+    path.basename(process.argv[1]) === 'cli.js' ||
+    path.basename(process.argv[1]) === 'cli.ts');
 
 if (isDirectRun) {
   const opts = parseCliArgs();
