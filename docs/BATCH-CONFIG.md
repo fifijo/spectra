@@ -100,10 +100,10 @@ Only the `file` field is required:
 
 ```bash
 # Run with batch config (URL from JSON)
-./spectra --batch scopes-batch.json
+npx spectra --batch scopes-batch.json
 
 # Run with batch config (override URL)
-./spectra --url http://localhost:8080 --batch scopes-batch.json
+npx spectra --url http://localhost:8080 --batch scopes-batch.json
 ```
 
 ## Validation

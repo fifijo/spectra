@@ -7,15 +7,16 @@ Step-by-step guide to full-spectrum test automation.
 ## Quick Start (TL;DR)
 
 ```bash
-# 1. Setup
-chmod +x setup-spectra.sh
-./setup-spectra.sh
+# 1. Install
+pnpm add -D spectra-test-automation @playwright/test
+npx spectra --init
+pnpm exec playwright install chromium
 
 # 2. Start your app (separate terminal)
 cd /your/app && pnpm dev
 
 # 3. Run Spectra
-./spectra --url http://localhost:5173
+npx spectra --url http://localhost:5173
 
 # Done! Tests are in tests/
 ```
@@ -37,7 +38,7 @@ cd /your/app && pnpm dev
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         YOUR INPUT                              │
-│  ./spectra --url http://localhost:5173 --scope "login form"    │
+│  npx spectra --url http://localhost:5173 --scope "login form"  │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -118,14 +119,14 @@ cd /your/app && pnpm dev
 │     + this.submitButton = page.getByRole('button',              │
 │     +   { name: 'Sign In' });                                   │
 │                                                                 │
-│  5. Re-runs tests: ✅ All pass                                  │
+│  5. Re-runs tests: All pass                                     │
 │                                                                 │
 │  6. Writes: .spectra/output/reports/healing-report.md          │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  ✨ SPECTRUM COMPLETE                                           │
+│  SPECTRUM COMPLETE                                              │
 │                                                                 │
 │  pages/LoginPage.ts     ← Page Object (fixed)                  │
 │  tests/login.spec.ts    ← Working tests                         │
@@ -138,23 +139,41 @@ cd /your/app && pnpm dev
 
 ---
 
-## Step 1: Setup
+## Step 1: Install
+
+### Option A: Install as npm package
 
 ```bash
-# Create project folder
-mkdir my-tests
-cd my-tests
+# In your project directory
+pnpm add -D spectra-test-automation @playwright/test
 
-# Run setup
-chmod +x setup-spectra.sh
-./setup-spectra.sh
+# Scaffold project structure
+npx spectra --init
+
+# Install Playwright browsers
+pnpm exec playwright install chromium
 ```
 
 Creates:
-- ✅ Playwright + Chromium
-- ✅ 3 agents (Planner, Generator, Healer)
-- ✅ MCP configuration
-- ✅ `spectra` CLI
+- Playwright + Chromium
+- 3 agents (Planner, Generator, Healer)
+- MCP configuration
+- `spectra` CLI (via `npx spectra`)
+
+### Option B: Install from Git
+
+```bash
+pnpm add -D "git+https://github.com/fifijo/spectra.git" @playwright/test
+```
+
+### Option C: Clone and develop locally
+
+```bash
+git clone https://github.com/fifijo/spectra.git
+cd spectra
+pnpm install
+pnpm run build
+```
 
 ---
 
@@ -174,19 +193,19 @@ pnpm dev
 ### Full Spectrum (entire app)
 
 ```bash
-./spectra --url http://localhost:5173
+npx spectra --url http://localhost:5173
 ```
 
 ### Single Page
 
 ```bash
-./spectra --url http://localhost:5173 --page /login
+npx spectra --url http://localhost:5173 --page /login
 ```
 
 ### Specific Feature
 
 ```bash
-./spectra --url http://localhost:5173 --page /checkout --scope "payment form"
+npx spectra --url http://localhost:5173 --page /checkout --scope "payment form"
 ```
 
 ### With Scope File
@@ -194,28 +213,18 @@ pnpm dev
 ```bash
 cp docs/SCOPE-template.md SCOPE.md
 # Edit SCOPE.md
-./spectra --url http://localhost:5173 --file SCOPE.md
+npx spectra --url http://localhost:5173 --file SCOPE.md
 ```
 
 ### Multiple Scopes (Batch Mode)
 
-Run multiple scopes sequentially:
+Run multiple scopes sequentially using a batch JSON config:
 
 ```bash
-# Option 1: Multiple files
-./spectra \
-  --url http://localhost:5173 \
-  --files SCOPE-login.md SCOPE-payment.md SCOPE-shipping.md
-
-# Option 2: Directory of scopes
-mkdir scopes
-cp docs/SCOPE-template.md scopes/SCOPE-login.md
-cp docs/SCOPE-template.md scopes/SCOPE-payment.md
-./spectra --url http://localhost:5173 --scopes-dir scopes/
-
-# Option 3: Batch JSON config
-./spectra --batch scopes-batch.json
+npx spectra --batch scopes-batch.json
 ```
+
+> See [BATCH-CONFIG.md](BATCH-CONFIG.md) for complete JSON schema documentation.
 
 ---
 
@@ -224,6 +233,9 @@ cp docs/SCOPE-template.md scopes/SCOPE-payment.md
 ```bash
 # Run tests
 pnpm test
+
+# Run seed spec to verify environment
+pnpm test:seed
 
 # View report
 pnpm report
@@ -247,16 +259,16 @@ pnpm test --grep-invert @slow     # Skip slow tests
 
 | Command | Description |
 |---------|-------------|
-| `./spectra -u URL` | Full spectrum scan |
-| `./spectra -u URL -p /page` | Single page focus |
-| `./spectra -u URL -s "feature"` | Feature scope |
-| `./spectra -u URL -f SCOPE.md` | Detailed scope file |
-| `./spectra -u URL -m` | Manual Cursor mode |
-| `./spectra -u URL --debug` | Enable debug output |
-| `./spectra -u URL --files FILE1 FILE2` | Run multiple scope files |
-| `./spectra -u URL --scopes-dir DIR` | Run all scopes in directory |
-| `./spectra --batch FILE.json` | Run scopes from JSON config |
+| `npx spectra --init` | Scaffold project structure |
+| `npx spectra -u URL` | Full spectrum scan |
+| `npx spectra -u URL -p /page` | Single page focus |
+| `npx spectra -u URL -s "feature"` | Feature scope |
+| `npx spectra -u URL -f SCOPE.md` | Detailed scope file |
+| `npx spectra -u URL -m` | Manual Cursor mode |
+| `npx spectra -u URL --debug` | Enable debug output |
+| `npx spectra -b FILE.json` | Run scopes from JSON config |
 | `pnpm test` | Run all tests |
+| `pnpm test:seed` | Run seed spec only |
 | `pnpm test:headed` | Run with visible browser |
 | `pnpm test:ui` | Run with Playwright UI |
 | `pnpm test --grep @tag` | Filter by tag |
@@ -279,7 +291,7 @@ pnpm test --grep-invert @slow     # Skip slow tests
 
 ```bash
 # Test only payment, not shipping/cart
-./spectra \
+npx spectra \
   --url http://localhost:5173 \
   --page /checkout \
   --scope "credit card payment form"
@@ -289,7 +301,7 @@ pnpm test --grep-invert @slow     # Skip slow tests
 
 ```bash
 # Test only password change
-./spectra \
+npx spectra \
   --url http://localhost:5173 \
   --page /settings \
   --scope "change password"
@@ -299,7 +311,7 @@ pnpm test --grep-invert @slow     # Skip slow tests
 
 ```bash
 # Test only analytics chart
-./spectra \
+npx spectra \
   --url http://localhost:5173 \
   --page /dashboard \
   --scope "revenue chart"
@@ -308,19 +320,11 @@ pnpm test --grep-invert @slow     # Skip slow tests
 ### Multiple Scopes (Batch Mode)
 
 ```bash
-# Test multiple features sequentially
-./spectra \
-  --url http://localhost:5173 \
-  --files SCOPE-login.md SCOPE-payment.md SCOPE-shipping.md
-
-# Or use a directory
-./spectra \
-  --url http://localhost:5173 \
-  --scopes-dir scopes/
-
-# Or use batch JSON config
-./spectra --batch scopes-batch.json
+# Use batch JSON config
+npx spectra --batch scopes-batch.json
 ```
+
+> See [BATCH-CONFIG.md](BATCH-CONFIG.md) for the JSON schema and examples.
 
 ---
 
@@ -345,43 +349,42 @@ pnpm test --grep-invert @slow     # Skip slow tests
 Use manual mode:
 
 ```bash
-./spectra --url http://localhost:5173 --manual
-```
-
-### Batch mode needs jq
-
-If using `--batch` option, install jq:
-
-```bash
-# macOS
-brew install jq
-
-# Linux
-sudo apt-get install jq  # Debian/Ubuntu
-sudo yum install jq      # RHEL/CentOS
+npx spectra --url http://localhost:5173 --manual
 ```
 
 ### Scope files not found in batch mode
 
-1. Check file paths in JSON config or directory
+1. Check file paths in batch JSON config
 2. Verify files exist: `ls -la SCOPE-*.md`
 3. Use absolute paths if relative paths don't work
-4. Check JSON syntax: `jq . scopes-batch.json`
 
 ---
 
 ## Files
 
 ```
-my-tests/
-├── spectra                     # ⭐ Main CLI (single + batch mode)
+spectra/
+├── src/                        # TypeScript source (CLI & library)
+│   ├── bin.ts                  # CLI entry point
+│   ├── cli.ts                  # Public API (library module)
+│   ├── agents/                 # Agent runner & scaffolding
+│   └── utils/                  # Shared utilities
+├── dist/                       # Compiled output (npm package)
+├── templates/                  # Shipped with the package
+│   ├── agents/                 # Agent definitions (Planner, Generator, Healer)
+│   ├── docs/                   # Scope template
+│   └── fixtures/               # Test fixture template
+├── specs/                      # Pipeline gate docs & Markdown plans
+├── tests/e2e/                  # End-to-end seed & integration tests
+│   └── seed.spec.ts            # Environment readiness contract
 ├── docs/                       # Documentation
 │   └── SCOPE-template.md       # Scoping template
 ├── scopes-batch.json           # Batch config example
 ├── playwright.config.ts        # Playwright configuration
-├── tsconfig.json               # TypeScript configuration
-├── .cursor/mcp.json
-├── .spectra/
+├── tsconfig.json               # TypeScript build config
+├── tsconfig.test.json          # TypeScript config for Playwright tests
+├── package.json                # npm package definition
+├── .spectra/                   # Generated via --init
 │   ├── agents/
 │   │   ├── planner/AGENT.md    # 🔵 Planner
 │   │   ├── generator/AGENT.md  # 🟢 Generator
@@ -389,8 +392,6 @@ my-tests/
 │   │   └── shared/
 │   │       ├── context.md       # Static context
 │   │       └── current-scope.md # Runtime scope (created by CLI)
-│   ├── lib/
-│   │   └── common.sh            # Shared CLI utilities
 │   └── output/
 │       ├── plans/test-plan.md
 │       ├── reports/

@@ -257,7 +257,7 @@ flowchart LR
 ### Example 1: Full Spectrum Scan
 
 ```bash
-./spectra --url http://localhost:5173
+npx spectra --url http://localhost:5173
 ```
 
 Spectra explores all accessible pages and generates comprehensive tests.
@@ -323,7 +323,7 @@ Spectra explores all accessible pages and generates comprehensive tests.
 ### Example 2: Single Page Focus
 
 ```bash
-./spectra --url http://localhost:5173 --page /login
+npx spectra --url http://localhost:5173 --page /login
 ```
 
 Focus only on the login page.
@@ -335,7 +335,7 @@ Focus only on the login page.
 When a page has multiple features but you only want to test one:
 
 ```bash
-./spectra \
+npx spectra \
   --url http://localhost:5173 \
   --page /checkout \
   --scope "credit card payment form"
@@ -394,41 +394,14 @@ DO NOT test:
 Run with scope file:
 
 ```bash
-./spectra --url http://localhost:5173 --file SCOPE.md
+npx spectra --url http://localhost:5173 --file SCOPE.md
 ```
 
 ---
 
 ### Example 5: Multiple Scopes (Batch Mode)
 
-Run multiple scopes sequentially until everything is tested:
-
-#### Option 1: Multiple `--files`
-
-```bash
-./spectra \
-  --url http://localhost:5173 \
-  --files SCOPE-login.md SCOPE-payment.md SCOPE-shipping.md
-```
-
-#### Option 2: Scope Directory
-
-Create a `scopes/` directory with your scope files:
-
-```bash
-mkdir scopes
-cp docs/SCOPE-template.md scopes/SCOPE-login.md
-cp docs/SCOPE-template.md scopes/SCOPE-payment.md
-cp docs/SCOPE-template.md scopes/SCOPE-shipping.md
-```
-
-# Run all scopes in directory
-./spectra \
-  --url http://localhost:5173 \
-  --scopes-dir scopes/
-```
-
-#### Option 3: Batch Configuration File
+Run multiple scopes sequentially using a batch JSON config.
 
 Create `scopes-batch.json`:
 
@@ -469,7 +442,7 @@ Create `scopes-batch.json`:
 Run with batch config:
 
 ```bash
-./spectra --batch scopes-batch.json
+npx spectra --batch scopes-batch.json
 ```
 
 > 📖 **See [BATCH-CONFIG.md](docs/BATCH-CONFIG.md) for complete JSON schema documentation**
@@ -519,8 +492,6 @@ spectra/
 │
 ├── 📂 tests/e2e/                # End-to-end seed & integration tests
 │   └── seed.spec.ts             # Environment readiness contract
-│
-├── 📜 setup-spectra.sh          # Legacy setup script
 │
 ├── 📂 .github/                  # CI/CD configuration (optional)
 │   └── workflows/
@@ -585,28 +556,15 @@ spectra/
 
 ### CLI Options
 
-#### Single Scope Options
-
 | Option | Short | Description | Example |
 |--------|-------|-------------|---------|
 | `--url` | `-u` | Target URL (required) | `-u http://localhost:5173` |
 | `--page` | `-p` | Specific page to test | `-p /checkout` |
 | `--scope` | `-s` | Feature to focus on | `-s "payment form"` |
 | `--file` | `-f` | Scope file path | `-f SCOPE.md` |
-
-#### Batch Mode Options
-
-| Option | Description | Example |
-|--------|-------------|---------|
-| `--files FILE1 ...` | Multiple scope files to run | `--files SCOPE-login.md SCOPE-payment.md` |
-| `--scopes-dir DIR` | Directory containing SCOPE-*.md files | `--scopes-dir scopes/` |
-| `--batch FILE` | JSON file with scope definitions | `--batch scopes-batch.json` |
-
-#### General Options
-
-| Option | Short | Description | Example |
-|--------|-------|-------------|---------|
+| `--batch` | `-b` | JSON file with scope definitions | `-b scopes-batch.json` |
 | `--manual` | `-m` | Force manual Cursor mode | `-m` |
+| `--init` | | Scaffold project structure | `--init` |
 | `--debug` | | Enable debug output | `--debug` |
 | `--help` | `-h` | Show help | `-h` |
 
@@ -624,10 +582,10 @@ spectra/
 export SPECTRA_URL=http://localhost:5173
 
 # Run without --url flag
-./spectra
+npx spectra
 
 # Cross-browser testing
-SPECTRA_BROWSERS=chromium,firefox ./spectra --url http://localhost:5173
+SPECTRA_BROWSERS=chromium,firefox npx spectra --url http://localhost:5173
 
 # Run only smoke tests
 SPECTRA_TAGS=@smoke pnpm test
@@ -703,7 +661,7 @@ Generated tests can include tags for filtering:
 When `cursor-agent` or `claude` CLI is installed:
 
 ```bash
-./spectra --url http://localhost:5173
+npx spectra --url http://localhost:5173
 ```
 
 All three agents run automatically without intervention.
@@ -713,7 +671,7 @@ All three agents run automatically without intervention.
 If no CLI is available, or you prefer control:
 
 ```bash
-./spectra --url http://localhost:5173 --manual
+npx spectra --url http://localhost:5173 --manual
 ```
 
 Spectra guides you to run each agent in Cursor.
@@ -874,7 +832,7 @@ pnpm exec playwright install chromium
 Use `--page` and `--scope` to narrow focus:
 
 ```bash
-./spectra --url http://localhost:5173 --page /login --scope "login form"
+npx spectra --url http://localhost:5173 --page /login --scope "login form"
 ```
 
 </details>
