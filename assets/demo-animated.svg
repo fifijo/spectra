@@ -62,7 +62,7 @@
   <text x="30" y="75" class="subtitle">Full-spectrum test automation</text>
   
   <!-- Command -->
-  <text x="30" y="100" class="command">$ ./spectra --url http://localhost:5173 --scope "task management"</text>
+  <text x="30" y="100" class="command">$ npx spectra --url http://localhost:5173 --scope "task management"</text>
   
   <!-- Phase 1: Planner -->
   <g class="phase1">
