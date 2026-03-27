@@ -6,10 +6,10 @@
  */
 
 export { run, type SpectraOptions } from './cli.js';
-export { createScopeContext } from './utils/scope.js';
-export { detectMode, type CliMode } from './utils/detect-mode.js';
 export {
+  DEFAULT_OUTPUT_DIR,
   SPECTRA_AGENTS,
   TEMPLATE_DIR,
-  DEFAULT_OUTPUT_DIR,
 } from './utils/constants.js';
+export { type CliMode, detectMode } from './utils/detect-mode.js';
+export { createScopeContext } from './utils/scope.js';

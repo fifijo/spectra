@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { execSync } from 'node:child_process';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { detectMode } from '../detect-mode.js';
 
@@ -28,7 +28,9 @@ describe('detectMode', () => {
 
   it('returns "claude-code" when cursor-agent is missing but claude exists', () => {
     mockedExecSync
-      .mockImplementationOnce(() => { throw new Error('not found'); })
+      .mockImplementationOnce(() => {
+        throw new Error('not found');
+      })
       .mockReturnValueOnce(Buffer.from('/usr/bin/claude'));
 
     expect(detectMode()).toBe('claude-code');
@@ -36,13 +38,17 @@ describe('detectMode', () => {
   });
 
   it('returns "manual" when no CLI tools are available', () => {
-    mockedExecSync.mockImplementation(() => { throw new Error('not found'); });
+    mockedExecSync.mockImplementation(() => {
+      throw new Error('not found');
+    });
 
     expect(detectMode()).toBe('manual');
   });
 
   it('returns "manual" when forceManual is false and no tools available', () => {
-    mockedExecSync.mockImplementation(() => { throw new Error('not found'); });
+    mockedExecSync.mockImplementation(() => {
+      throw new Error('not found');
+    });
 
     expect(detectMode(false)).toBe('manual');
   });

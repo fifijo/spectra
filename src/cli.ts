@@ -1,11 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
-
-import { buildPrompt, runAgent } from './agents/runner.js';
 import { initAgents, scaffold } from './agents/init.js';
-import { createScopeContext } from './utils/scope.js';
+import { buildPrompt, runAgent } from './agents/runner.js';
 import { detectMode } from './utils/detect-mode.js';
 import { logger } from './utils/logger.js';
+import { createScopeContext } from './utils/scope.js';
 
 export interface SpectraOptions {
   url?: string;
@@ -59,7 +58,10 @@ export function run(options: SpectraOptions = {}): void {
       process.exit(1);
     }
 
-    let batchConfig: { url?: string; scopes: Array<{ name?: string; file: string; description?: string }> };
+    let batchConfig: {
+      url?: string;
+      scopes: Array<{ name?: string; file: string; description?: string }>;
+    };
     try {
       batchConfig = JSON.parse(fs.readFileSync(batchPath, 'utf-8'));
     } catch {
@@ -67,7 +69,7 @@ export function run(options: SpectraOptions = {}): void {
       process.exit(1);
     }
 
-    const batchUrl = options.url ?? batchConfig.url ?? process.env['SPECTRA_URL'] ?? '';
+    const batchUrl = options.url ?? batchConfig.url ?? process.env.SPECTRA_URL ?? '';
     if (!batchUrl) {
       logger.error('Error: URL required. Use --url, set SPECTRA_URL, or add "url" to batch config');
       process.exit(1);
@@ -99,7 +101,7 @@ export function run(options: SpectraOptions = {}): void {
     return;
   }
 
-  const url = options.url ?? process.env['SPECTRA_URL'] ?? '';
+  const url = options.url ?? process.env.SPECTRA_URL ?? '';
   if (!url) {
     logger.error('Error: URL required. Use --url or set SPECTRA_URL');
     logger.plain('Run spectra --help for usage information.');
@@ -201,10 +203,14 @@ export function run(options: SpectraOptions = {}): void {
   let testCount = 0;
   try {
     pageCount = fs.readdirSync(pagesDir).filter((f) => f.endsWith('.ts')).length;
-  } catch { /* empty */ }
+  } catch {
+    /* empty */
+  }
   try {
     testCount = fs.readdirSync(testsDir).filter((f) => f.endsWith('.spec.ts')).length;
-  } catch { /* empty */ }
+  } catch {
+    /* empty */
+  }
 
   logger.plain('Generated:');
   logger.plain(`  Page Objects: ${pageCount}`);

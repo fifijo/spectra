@@ -36,7 +36,16 @@
     "test:unit:watch": "vitest",
     "test:unit:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "lint": "biome lint",
+    "lint:fix": "biome lint --write",
+    "format": "biome format --write",
+    "format:check": "biome format",
+    "check": "biome check",
+    "check:fix": "biome check --write",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm run build && changeset publish"
   },
   "keywords": [
     "playwright",
@@ -63,6 +72,9 @@
     }
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.9",
+    "@changesets/changelog-github": "^0.6.0",
+    "@changesets/cli": "^2.30.0",
     "@playwright/test": "^1.57.0",
     "@types/node": "^25.0.9",
     "typescript": "^5.9.3",

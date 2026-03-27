@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
 import { parseArgs } from 'node:util';
+import { describe, expect, it } from 'vitest';
 
 // We test the argument parsing logic by re-implementing parseCliArgs
 // since it's not exported from bin.ts. This validates the parseArgs config.
@@ -9,29 +9,29 @@ describe('CLI argument parsing', () => {
     const { values } = parseArgs({
       args,
       options: {
-        url:    { type: 'string', short: 'u' },
-        page:   { type: 'string', short: 'p' },
-        scope:  { type: 'string', short: 's' },
-        file:   { type: 'string', short: 'f' },
-        batch:  { type: 'string', short: 'b' },
+        url: { type: 'string', short: 'u' },
+        page: { type: 'string', short: 'p' },
+        scope: { type: 'string', short: 's' },
+        file: { type: 'string', short: 'f' },
+        batch: { type: 'string', short: 'b' },
         manual: { type: 'boolean', short: 'm', default: false },
-        init:   { type: 'boolean', default: false },
-        debug:  { type: 'boolean', default: false },
-        help:   { type: 'boolean', short: 'h', default: false },
+        init: { type: 'boolean', default: false },
+        debug: { type: 'boolean', default: false },
+        help: { type: 'boolean', short: 'h', default: false },
       },
       strict: true,
     });
 
     return {
-      url:    values.url,
-      page:   values.page,
-      scope:  values.scope,
-      file:   values.file,
-      batch:  values.batch,
+      url: values.url,
+      page: values.page,
+      scope: values.scope,
+      file: values.file,
+      batch: values.batch,
       manual: values.manual,
-      init:   values.init,
-      debug:  values.debug,
-      help:   values.help,
+      init: values.init,
+      debug: values.debug,
+      help: values.help,
     };
   };
 
@@ -132,9 +132,12 @@ describe('CLI argument parsing', () => {
 
   it('parses multiple flags together', () => {
     const result = parseCliArgs([
-      '-u', 'http://localhost:5173',
-      '-p', '/checkout',
-      '-s', 'payment',
+      '-u',
+      'http://localhost:5173',
+      '-p',
+      '/checkout',
+      '-s',
+      'payment',
       '--debug',
     ]);
     expect(result.url).toBe('http://localhost:5173');
