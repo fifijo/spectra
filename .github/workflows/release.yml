@@ -35,6 +35,15 @@ jobs:
       - name: Build
         run: pnpm run build
 
+      - name: Check NPM_TOKEN
+        run: |
+          if [ -z "$NPM_TOKEN" ]; then
+            echo "::error::NPM_TOKEN secret is not set. Please add an npm access token as a repository secret named NPM_TOKEN. You can create one at https://www.npmjs.com/settings/YOUR_USERNAME/tokens"
+            exit 1
+          fi
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Create Release Pull Request or Publish
         id: changesets
         uses: changesets/action@v1
