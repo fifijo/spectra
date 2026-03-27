@@ -34,15 +34,15 @@ function printUsage(): void {
 function parseCliArgs(): SpectraOptions {
   const { values } = parseArgs({
     options: {
-      url:    { type: 'string', short: 'u' },
-      page:   { type: 'string', short: 'p' },
-      scope:  { type: 'string', short: 's' },
-      file:   { type: 'string', short: 'f' },
-      batch:  { type: 'string', short: 'b' },
+      url: { type: 'string', short: 'u' },
+      page: { type: 'string', short: 'p' },
+      scope: { type: 'string', short: 's' },
+      file: { type: 'string', short: 'f' },
+      batch: { type: 'string', short: 'b' },
       manual: { type: 'boolean', short: 'm', default: false },
-      init:   { type: 'boolean', default: false },
-      debug:  { type: 'boolean', default: false },
-      help:   { type: 'boolean', short: 'h', default: false },
+      init: { type: 'boolean', default: false },
+      debug: { type: 'boolean', default: false },
+      help: { type: 'boolean', short: 'h', default: false },
     },
     strict: true,
   });
@@ -53,14 +53,14 @@ function parseCliArgs(): SpectraOptions {
   }
 
   return {
-    url:    values.url,
-    page:   values.page,
-    scope:  values.scope,
-    file:   values.file,
-    batch:  values.batch,
+    url: values.url,
+    page: values.page,
+    scope: values.scope,
+    file: values.file,
+    batch: values.batch,
     manual: values.manual,
-    init:   values.init,
-    debug:  values.debug,
+    init: values.init,
+    debug: values.debug,
   };
 }
 

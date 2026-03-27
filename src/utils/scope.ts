@@ -12,19 +12,11 @@ export interface ScopeOptions {
  * Create the runtime scope context file that agents read
  * to understand the current testing constraints.
  */
-export function createScopeContext(
-  outputPath: string,
-  options: ScopeOptions,
-): void {
+export function createScopeContext(outputPath: string, options: ScopeOptions): void {
   const dir = path.dirname(outputPath);
   fs.mkdirSync(dir, { recursive: true });
 
-  const lines: string[] = [
-    '# Current Spectra Scope',
-    '',
-    '## Target',
-    `- **URL**: ${options.url}`,
-  ];
+  const lines: string[] = ['# Current Spectra Scope', '', '## Target', `- **URL**: ${options.url}`];
 
   if (options.page) {
     lines.push(`- **Page**: ${options.page}`);

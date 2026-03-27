@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock dependencies before importing cli
 vi.mock('../agents/runner.js', () => ({
@@ -36,11 +36,11 @@ vi.mock('../utils/logger.js', () => ({
   },
 }));
 
+import { initAgents, scaffold } from '../agents/init.js';
+import { runAgent } from '../agents/runner.js';
 import { run } from '../cli.js';
-import { runAgent, buildPrompt } from '../agents/runner.js';
-import { scaffold, initAgents } from '../agents/init.js';
-import { createScopeContext } from '../utils/scope.js';
 import { logger } from '../utils/logger.js';
+import { createScopeContext } from '../utils/scope.js';
 
 function makeTmpDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'spectra-cli-'));
@@ -68,7 +68,7 @@ describe('run', () => {
       fs.rmSync(d, { recursive: true, force: true });
     }
     tmpDirs.length = 0;
-    delete process.env['SPECTRA_URL'];
+    delete process.env.SPECTRA_URL;
   });
 
   describe('--init mode', () => {
@@ -96,7 +96,7 @@ describe('run', () => {
     });
 
     it('uses SPECTRA_URL env var when --url is not provided', () => {
-      process.env['SPECTRA_URL'] = 'http://env-url:3000';
+      process.env.SPECTRA_URL = 'http://env-url:3000';
 
       run({ url: undefined });
 
@@ -105,7 +105,7 @@ describe('run', () => {
     });
 
     it('prefers --url over SPECTRA_URL env var', () => {
-      process.env['SPECTRA_URL'] = 'http://env-url:3000';
+      process.env.SPECTRA_URL = 'http://env-url:3000';
 
       run({ url: 'http://cli-url:4000' });
 
@@ -211,7 +211,10 @@ describe('run', () => {
     it('prints summary after running agents', () => {
       run({ url: 'http://localhost:5173' });
 
-      expect(logger.separator).toHaveBeenCalledWith('blue', expect.stringContaining('SPECTRUM COMPLETE'));
+      expect(logger.separator).toHaveBeenCalledWith(
+        'blue',
+        expect.stringContaining('SPECTRUM COMPLETE'),
+      );
       expect(logger.plain).toHaveBeenCalledWith(expect.stringContaining('Page Objects'));
       expect(logger.plain).toHaveBeenCalledWith(expect.stringContaining('Test files'));
     });

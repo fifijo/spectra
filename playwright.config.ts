@@ -9,9 +9,9 @@ export default defineConfig({
   reporter: [
     ['html', { outputFolder: '.spectra/output/reports' }],
     ['json', { outputFile: '.spectra/output/reports/results.json' }],
-    ['list']
+    ['list'],
   ],
-  
+
   use: {
     baseURL: process.env.SPECTRA_URL || 'http://localhost:5173',
     trace: 'on-first-retry',
@@ -25,6 +25,6 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  
+
   outputDir: '.spectra/output/test-results',
 });

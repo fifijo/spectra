@@ -41,13 +41,9 @@ export const logger = {
   separator(color: string, label: string) {
     const c = color === 'blue' ? BLUE : color === 'green' ? GREEN : MAGENTA;
     console.log('');
-    console.log(
-      `${c}═══════════════════════════════════════════════════════${RESET}`,
-    );
+    console.log(`${c}═══════════════════════════════════════════════════════${RESET}`);
     console.log(`${c}  ${label}${RESET}`);
-    console.log(
-      `${c}═══════════════════════════════════════════════════════${RESET}`,
-    );
+    console.log(`${c}═══════════════════════════════════════════════════════${RESET}`);
     console.log('');
   },
 };

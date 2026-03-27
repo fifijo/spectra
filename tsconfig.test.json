@@ -21,16 +21,6 @@
       "@fixtures/*": ["fixtures/*"]
     }
   },
-  "include": [
-    "pages/**/*.ts",
-    "tests/**/*.ts",
-    "fixtures/**/*.ts",
-    "playwright.config.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "dummy-test-app",
-    ".spectra/output"
-  ]
+  "include": ["pages/**/*.ts", "tests/**/*.ts", "fixtures/**/*.ts", "playwright.config.ts"],
+  "exclude": ["node_modules", "dist", "dummy-test-app", ".spectra/output"]
 }

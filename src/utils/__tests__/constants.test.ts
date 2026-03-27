@@ -1,13 +1,13 @@
-import { describe, it, expect } from 'vitest';
-import path from 'node:path';
 import fs from 'node:fs';
+import path from 'node:path';
+import { describe, expect, it } from 'vitest';
 
 import {
-  PACKAGE_ROOT,
-  TEMPLATE_DIR,
   DEFAULT_OUTPUT_DIR,
-  SPECTRA_AGENTS,
   DEFAULTS,
+  PACKAGE_ROOT,
+  SPECTRA_AGENTS,
+  TEMPLATE_DIR,
 } from '../constants.js';
 
 describe('constants', () => {
@@ -41,8 +41,11 @@ describe('constants', () => {
   });
 
   it('DEFAULTS contains all expected keys', () => {
-    expect(Object.keys(DEFAULTS).sort()).toEqual(
-      ['browsers', 'maxHealerAttempts', 'timeout', 'url'],
-    );
+    expect(Object.keys(DEFAULTS).sort()).toEqual([
+      'browsers',
+      'maxHealerAttempts',
+      'timeout',
+      'url',
+    ]);
   });
 });

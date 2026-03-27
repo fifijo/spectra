@@ -23,5 +23,8 @@ playwright/.cache/
 # OS
 .DS_Store
 
+# Biome
+.biome/
+
 # Keep agent definitions
 !.spectra/agents/
