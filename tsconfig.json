@@ -17,6 +17,9 @@
     "sourceMap": true,
     "outDir": "dist",
     "rootDir": "src",
+    "typeRoots": ["./node_modules/@types"],
+    "types": ["node"],
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
       "@pages/*": ["pages/*"],
