@@ -1,4 +1,4 @@
-import { execFileSync, execSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -14,25 +14,29 @@ export interface AgentRunOptions {
   outputDir: string;
 }
 
-function runCursorAgent(name: string, prompt: string, outputDir: string) {
-  logger.info(`Running ${name} with cursor-agent...`);
+function runCursorAgent(name: string, prompt: string, outputDir: string, debug: boolean) {
+  if (debug) {
+    logger.debug(name, 'Starting cursor-agent...');
+  }
   try {
-    execFileSync('cursor-agent', ['--print', '--force', prompt], {
+    const child = spawn('cursor-agent', ['--print', '--force', prompt], {
       stdio: ['inherit', 'pipe', 'pipe'],
     });
-  } catch (err) {
-    const logPath = path.join(outputDir, `${name}.log`);
-    fs.writeFileSync(logPath, String(err), 'utf-8');
-    throw err;
-  }
-}
 
-function runClaudeCode(name: string, prompt: string, outputDir: string) {
-  logger.info(`Running ${name} with Claude Code...`);
-  try {
-    execSync('claude --mcp', {
-      input: prompt,
-      stdio: ['pipe', 'pipe', 'pipe'],
+    if (debug) {
+      child.stdout.on('data', (data) => {
+        process.stdout.write(`${data}`);
+      });
+      child.stderr.on('data', (data) => {
+        process.stderr.write(`${data}`);
+      });
+    }
+
+    child.on('close', (code) => {
+      if (code !== 0) {
+        const logPath = path.join(outputDir, `${name}.log`);
+        fs.writeFileSync(logPath, `cursor-agent exited with code ${code}`, 'utf-8');
+      }
     });
   } catch (err) {
     const logPath = path.join(outputDir, `${name}.log`);
@@ -41,15 +45,51 @@ function runClaudeCode(name: string, prompt: string, outputDir: string) {
   }
 }
 
-function runManual(name: string, prompt: string, agentsDir: string) {
+function runClaudeCode(name: string, prompt: string, outputDir: string, debug: boolean) {
+  if (debug) {
+    logger.debug(name, 'Starting Claude Code...');
+  }
+  try {
+    const child = spawn('claude', ['--mcp'], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+
+    child.stdin.write(prompt);
+    child.stdin.end();
+
+    if (debug) {
+      child.stdout.on('data', (data) => {
+        process.stdout.write(`${data}`);
+      });
+      child.stderr.on('data', (data) => {
+        process.stderr.write(`${data}`);
+      });
+    }
+
+    child.on('close', (code) => {
+      if (code !== 0) {
+        const logPath = path.join(outputDir, `${name}.log`);
+        fs.writeFileSync(logPath, `claude exited with code ${code}`, 'utf-8');
+      }
+    });
+  } catch (err) {
+    const logPath = path.join(outputDir, `${name}.log`);
+    fs.writeFileSync(logPath, String(err), 'utf-8');
+    throw err;
+  }
+}
+
+function runManual(name: string, prompt: string, agentsDir: string, debug: boolean) {
   const promptPath = path.join(agentsDir, name, 'current-prompt.md');
   fs.mkdirSync(path.dirname(promptPath), { recursive: true });
   fs.writeFileSync(promptPath, prompt, 'utf-8');
 
-  logger.plain('Open your IDE and use the agent prompt:');
+  logger.plain('');
+  logger.info('Open your IDE and use the agent prompt:');
   logger.cyan(`  ${promptPath}`);
   logger.plain('');
-  logger.plain(`Press Ctrl+C when ${name} is complete, or run with a supported CLI.`);
+  logger.info(`Press Ctrl+C when ${name} is complete, or run with a supported CLI.`);
+  logger.plain('');
 }
 
 export function buildPrompt(
@@ -66,20 +106,24 @@ ${instruction}
 When complete, create: ${completionPath}`;
 }
 
-export function runAgent(options: AgentRunOptions, agentsDir: string): void {
+export function runAgent(options: AgentRunOptions, agentsDir: string, debug = false): void {
   const { name, color, emoji, prompt, mode, outputDir } = options;
 
   logger.separator(color, `${emoji} ${name.toUpperCase()}`);
 
+  if (debug) {
+    logger.prompt(name, prompt);
+  }
+
   switch (mode) {
     case 'cursor-agent':
-      runCursorAgent(name, prompt, outputDir);
+      runCursorAgent(name, prompt, outputDir, debug);
       break;
     case 'claude-code':
-      runClaudeCode(name, prompt, outputDir);
+      runClaudeCode(name, prompt, outputDir, debug);
       break;
     case 'manual':
-      runManual(name, prompt, agentsDir);
+      runManual(name, prompt, agentsDir, debug);
       break;
   }
 }

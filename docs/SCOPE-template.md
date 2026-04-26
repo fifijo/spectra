@@ -9,7 +9,7 @@ Copy to `SCOPE.md` and customize.
 
 **Feature Name**: [e.g., Payment Form]
 
-**Description**: 
+**Description**:
 [Describe the specific feature]
 
 ---
@@ -18,6 +18,17 @@ Copy to `SCOPE.md` and customize.
 
 **Page URL**: /path
 **Section**: [Which part of the page]
+
+---
+
+## Test Focus (choose what to prioritize)
+
+- [ ] Happy path only
+- [ ] Validation and error cases
+- [ ] Empty state handling
+- [ ] Loading and async states
+- [ ] Toggle/interaction states
+- [ ] Edge cases and boundary values
 
 ---
 

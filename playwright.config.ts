@@ -1,5 +1,17 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const baseURL = process.env.SPECTRA_URL || 'http://localhost:5173';
+
+function shouldStartLocalWebServer(url: string): boolean {
+  if (process.env.SPECTRA_SKIP_WEBSERVER) return false;
+  try {
+    const { hostname } = new URL(url);
+    return hostname === 'localhost' || hostname === '127.0.0.1';
+  } catch {
+    return false;
+  }
+}
+
 export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
@@ -12,8 +24,19 @@ export default defineConfig({
     ['list'],
   ],
 
+  ...(shouldStartLocalWebServer(baseURL)
+    ? {
+        webServer: {
+          command: 'pnpm run dev',
+          cwd: './dummy-test-app',
+          url: baseURL,
+          reuseExistingServer: !process.env.CI,
+        },
+      }
+    : {}),
+
   use: {
-    baseURL: process.env.SPECTRA_URL || 'http://localhost:5173',
+    baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     testIdAttribute: 'data-testid',

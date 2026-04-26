@@ -8,30 +8,42 @@ const BLUE = '\x1b[34m';
 const CYAN = '\x1b[36m';
 const MAGENTA = '\x1b[35m';
 
+const DEBUG = process.env.DEBUG === '1';
+
+function timestamp(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `[${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}]`;
+}
+
+function withTimestamp(msg: string, color: string): string {
+  return DEBUG ? `${timestamp()} ${color}${msg}${RESET}` : `${color}${msg}${RESET}`;
+}
+
 export const logger = {
   info(msg: string) {
-    console.log(`${BLUE}${msg}${RESET}`);
+    console.log(withTimestamp(msg, BLUE));
   },
   success(msg: string) {
-    console.log(`${GREEN}${msg}${RESET}`);
+    console.log(withTimestamp(msg, GREEN));
   },
   warn(msg: string) {
-    console.log(`${YELLOW}${msg}${RESET}`);
+    console.log(withTimestamp(msg, YELLOW));
   },
   error(msg: string) {
-    console.error(`${RED}${msg}${RESET}`);
+    console.error(withTimestamp(msg, RED));
   },
   cyan(msg: string) {
-    console.log(`${CYAN}${msg}${RESET}`);
+    console.log(withTimestamp(msg, CYAN));
   },
   magenta(msg: string) {
-    console.log(`${MAGENTA}${msg}${RESET}`);
+    console.log(withTimestamp(msg, MAGENTA));
   },
   plain(msg: string) {
-    console.log(msg);
+    console.log(DEBUG ? `${timestamp()} ${msg}` : msg);
   },
   banner() {
-    console.log('');
+    if (DEBUG) console.log('');
     console.log(`${CYAN}   ◐ ◑ ◒${RESET}`);
     console.log(`${CYAN}  SPECTRA${RESET}`);
     console.log(`  ${MAGENTA}Full-spectrum test automation${RESET}`);
@@ -45,5 +57,25 @@ export const logger = {
     console.log(`${c}  ${label}${RESET}`);
     console.log(`${c}═══════════════════════════════════════════════════════${RESET}`);
     console.log('');
+  },
+  debug(label: string, msg: string) {
+    if (!DEBUG) return;
+    console.log(`${timestamp()} ${GREEN}[DEBUG]${RESET} ${MAGENTA}[${label}]${RESET} ${msg}`);
+  },
+  prompt(label: string, content: string) {
+    if (!DEBUG) return;
+    console.log(`${timestamp()} ${MAGENTA}[PROMPT]${RESET} ${CYAN}${label}${RESET}`);
+    console.log('```');
+    console.log(content);
+    console.log('```');
+    console.log('');
+  },
+  stream(prefix: string) {
+    return {
+      write: (data: string) => {
+        if (!DEBUG) return;
+        process.stdout.write(`${timestamp()} ${prefix} ${data}`);
+      },
+    };
   },
 };

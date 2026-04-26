@@ -52,6 +52,10 @@ function parseCliArgs(): SpectraOptions {
     process.exit(0);
   }
 
+  if (values.debug) {
+    process.env.DEBUG = '1';
+  }
+
   return {
     url: values.url,
     page: values.page,

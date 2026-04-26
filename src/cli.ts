@@ -117,6 +117,8 @@ export function run(options: SpectraOptions = {}): void {
   fs.mkdirSync(path.join(outputDir, 'reports'), { recursive: true });
   fs.mkdirSync(path.join(outputDir, 'test-results'), { recursive: true });
 
+  logger.debug('cli', 'Ensured output directories exist');
+
   // If agents dir doesn't exist, initialize it
   if (!fs.existsSync(agentsDir)) {
     logger.info('Agent templates not found. Initializing...');
@@ -131,17 +133,22 @@ export function run(options: SpectraOptions = {}): void {
   logger.plain('');
 
   // Create scope context
+  logger.debug('cli', 'Creating scope context...');
   createScopeContext(path.join(agentsDir, 'shared', 'current-scope.md'), {
     url,
     page: options.page,
     scope: options.scope,
     scopeFile: options.file,
   });
+  logger.debug('cli', 'Scope context created');
 
   // Clean previous outputs
+  logger.debug('cli', 'Cleaning previous outputs...');
   clean(cwd);
+  logger.debug('cli', 'Previous outputs cleaned');
 
   // Run agents
+  logger.debug('cli', 'Starting Planner agent...');
   runAgent(
     {
       name: 'planner',
@@ -157,8 +164,10 @@ export function run(options: SpectraOptions = {}): void {
       outputDir,
     },
     agentsDir,
+    options.debug ?? false,
   );
 
+  logger.debug('cli', 'Planner complete. Starting Generator...');
   runAgent(
     {
       name: 'generator',
@@ -174,8 +183,10 @@ export function run(options: SpectraOptions = {}): void {
       outputDir,
     },
     agentsDir,
+    options.debug ?? false,
   );
 
+  logger.debug('cli', 'Generator complete. Starting Healer...');
   runAgent(
     {
       name: 'healer',
@@ -191,7 +202,10 @@ export function run(options: SpectraOptions = {}): void {
       outputDir,
     },
     agentsDir,
+    options.debug ?? false,
   );
+
+  logger.debug('cli', 'Healer complete');
 
   // Summary
   logger.separator('blue', '✨ SPECTRUM COMPLETE');
