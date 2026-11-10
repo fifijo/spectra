@@ -45,6 +45,54 @@ describe('detectMode', () => {
     expect(detectMode()).toBe('manual');
   });
 
+  it('returns "codex" when only the codex CLI exists', () => {
+    mockedExecSync
+      .mockImplementationOnce(() => {
+        throw new Error('not found');
+      })
+      .mockImplementationOnce(() => {
+        throw new Error('not found');
+      })
+      .mockReturnValueOnce(Buffer.from('/usr/bin/codex'));
+
+    expect(detectMode()).toBe('codex');
+  });
+
+  it('returns "opencode" when only the opencode CLI exists', () => {
+    mockedExecSync
+      .mockImplementationOnce(() => {
+        throw new Error('not found');
+      })
+      .mockImplementationOnce(() => {
+        throw new Error('not found');
+      })
+      .mockImplementationOnce(() => {
+        throw new Error('not found');
+      })
+      .mockReturnValueOnce(Buffer.from('/usr/bin/opencode'));
+
+    expect(detectMode()).toBe('opencode');
+  });
+
+  it('returns "gemini" when only the gemini CLI exists', () => {
+    mockedExecSync
+      .mockImplementationOnce(() => {
+        throw new Error('not found');
+      })
+      .mockImplementationOnce(() => {
+        throw new Error('not found');
+      })
+      .mockImplementationOnce(() => {
+        throw new Error('not found');
+      })
+      .mockImplementationOnce(() => {
+        throw new Error('not found');
+      })
+      .mockReturnValueOnce(Buffer.from('/usr/bin/gemini'));
+
+    expect(detectMode()).toBe('gemini');
+  });
+
   it('returns "manual" when forceManual is false and no tools available', () => {
     mockedExecSync.mockImplementation(() => {
       throw new Error('not found');

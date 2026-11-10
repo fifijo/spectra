@@ -37,7 +37,8 @@ A JSON file listing Scope definitions to run one after another.
 _Avoid_: scope batch, multi-scope, sweep
 
 **Mode**:
-Which CLI tool runs the Agents — `cursor-agent`, `claude-code`, or `manual`.
+Which CLI tool runs the Agents — `cursor-agent`, `claude-code`, `codex`,
+`opencode`, `gemini`, or `manual`.
 _Avoid_: runner, backend, provider
 
 **Completion signal**:

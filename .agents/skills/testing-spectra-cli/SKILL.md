@@ -62,7 +62,8 @@ npm pack --dry-run
 - `src/cli.ts` is a pure library module (exports async `run()` and `SpectraOptions`)
 - `src/index.ts` re-exports from `cli.ts` — importing this must NOT trigger CLI behavior
 - `package.json` `bin` field points to `dist/bin.js`
-- Agents run in "manual" mode when neither `cursor-agent` nor `claude` CLI is installed
+- Agents run in "manual" mode when no agent CLI is installed (`cursor-agent`,
+  `claude`, `codex`, `opencode` or `gemini`)
 
 ## Devin Secrets Needed
 None required for CLI testing.

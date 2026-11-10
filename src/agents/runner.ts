@@ -161,6 +161,27 @@ export async function runAgent(agent: Agent, ctx: RunContext): Promise<void> {
         debug,
       );
       break;
+    case 'codex':
+      await runAgentCli(
+        'codex',
+        ['exec', '--skip-git-repo-check', '--full-auto', prompt],
+        agent.name,
+        outputDir,
+        debug,
+      );
+      break;
+    case 'opencode':
+      await runAgentCli('opencode', ['run', '--auto', prompt], agent.name, outputDir, debug);
+      break;
+    case 'gemini':
+      await runAgentCli(
+        'gemini',
+        ['--approval-mode=yolo', '-p', prompt],
+        agent.name,
+        outputDir,
+        debug,
+      );
+      break;
     case 'manual': {
       const promptPath = path.join(agentsDir, agent.name, 'current-prompt.md');
       fs.mkdirSync(path.dirname(promptPath), { recursive: true });

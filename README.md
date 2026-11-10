@@ -671,11 +671,15 @@ Generated tests can include tags for filtering:
 
 ### Fully Automated Mode
 
-When `cursor-agent` or `claude` CLI is installed:
+When an agent CLI is installed, Spectra uses it:
 
 ```bash
 npx spectra --url http://localhost:5173
 ```
+
+The CLI is picked automatically, in this order: `cursor-agent`, `claude`
+(Claude Code), `codex` (OpenAI Codex), `opencode`, `gemini` (Gemini CLI) —
+and if none is installed, the run falls back to manual mode.
 
 All three agents run automatically without intervention. Each agent finishes before the
 next one starts, so the Generator always reads a finished test plan.
@@ -736,6 +740,15 @@ curl https://cursor.com/install -fsS | bash
 
 # Option 2: Claude Code
 npm install -g @anthropic-ai/claude-code
+
+# Option 3: OpenAI Codex
+npm install -g @openai/codex
+
+# Option 4: opencode
+npm install -g opencode-ai
+
+# Option 5: Gemini CLI
+npm install -g @google/gemini-cli
 ```
 
 ---

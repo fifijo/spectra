@@ -258,4 +258,43 @@ describe('runAgent', () => {
       process.env.PATH = originalPath;
     }
   });
+
+  it.each([
+    { mode: 'codex', bin: 'codex', flags: ['exec', '--skip-git-repo-check', '--full-auto'] },
+    { mode: 'opencode', bin: 'opencode', flags: ['run', '--auto'] },
+    { mode: 'gemini', bin: 'gemini', flags: ['--approval-mode=yolo', '-p'] },
+  ])('runs $bin with its headless flags', async ({ mode, bin, flags }) => {
+    const workDir = makeTmpDir();
+    const binDir = path.join(workDir, 'bin');
+    fs.mkdirSync(binDir, { recursive: true });
+
+    const argvFile = path.join(workDir, 'argv.json');
+    const fakeAgent = path.join(binDir, bin);
+    fs.writeFileSync(
+      fakeAgent,
+      `#!/usr/bin/env node\nrequire('fs').writeFileSync(${JSON.stringify(argvFile)}, JSON.stringify(process.argv.slice(2)));\n`,
+      'utf-8',
+    );
+    fs.chmodSync(fakeAgent, 0o755);
+
+    const originalPath = process.env.PATH;
+    process.env.PATH = `${binDir}:${originalPath}`;
+
+    try {
+      await expect(
+        runAgent(agentNamed('planner'), {
+          mode: mode as RunContext['mode'],
+          outputDir: path.join(workDir, 'output'),
+          agentsDir: path.join(workDir, 'agents'),
+          debug: false,
+        }),
+      ).resolves.toBeUndefined();
+    } finally {
+      process.env.PATH = originalPath;
+    }
+
+    const argv = JSON.parse(fs.readFileSync(argvFile, 'utf-8')) as string[];
+    expect(argv.slice(0, flags.length)).toEqual(flags);
+    expect(argv[argv.length - 1]).toContain('INSTRUCTIONS:');
+  });
 });

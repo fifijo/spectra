@@ -45,6 +45,9 @@ Each agent:
 2. Is dispatched by `runAgent()` based on detected mode:
    - `cursor-agent`: `spawn('cursor-agent', ['--print', '--force', prompt])`
    - `claude-code`: `spawn('claude', ['-p', prompt, '--permission-mode', 'bypassPermissions'])`
+   - `codex`: `spawn('codex', ['exec', '--skip-git-repo-check', '--full-auto', prompt])`
+   - `opencode`: `spawn('opencode', ['run', '--auto', prompt])`
+   - `gemini`: `spawn('gemini', ['--approval-mode=yolo', '-p', prompt])`
    - `manual`: writes the prompt to a file and waits for the completion signal (30 minutes, then it gives up)
 3. The agent's stdout and stderr are always drained and written to `.spectra/output/<name>.log`.
    An unread pipe fills up and blocks the agent forever. A failing agent rejects with the log path.
@@ -80,8 +83,9 @@ Each agent creates a `.complete` file when done:
 - `DEFAULT_OUTPUT_DIR` - `.spectra/output`
 
 ### `src/utils/detect-mode.ts`
-- `detectMode(forceManual?)` - checks for `cursor-agent` then `claude` CLI
-- Returns: `'cursor-agent' | 'claude-code' | 'manual'`
+- `detectMode(forceManual?)` - checks for `cursor-agent`, `claude`, `codex`,
+  `opencode` and `gemini` on the PATH, in that order
+- Returns: `'cursor-agent' | 'claude-code' | 'codex' | 'opencode' | 'gemini' | 'manual'`
 - Uses platform-aware command detection (`where` on Windows, `command -v` on Unix)
 
 ### `src/utils/logger.ts`
