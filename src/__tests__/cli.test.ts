@@ -530,6 +530,17 @@ describe('run', () => {
       expect(logger.plain).toHaveBeenCalledWith('  Page Objects: 1');
       expect(logger.plain).toHaveBeenCalledWith('  Test files: 1');
     });
+
+    it('prints commands the consumer project actually has', async () => {
+      await run({ url: 'http://localhost:5173' });
+
+      const printed = vi
+        .mocked(logger.plain)
+        .mock.calls.map((call) => call[0])
+        .join('\n');
+      expect(printed).toContain('npx playwright test');
+      expect(printed).not.toContain('pnpm test');
+    });
   });
 
   describe('auto-init agents', () => {

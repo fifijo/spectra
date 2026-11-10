@@ -95,8 +95,10 @@ export async function run(options: SpectraOptions = {}): Promise<boolean> {
     logger.success('Spectra project initialized!');
     logger.plain('');
     logger.plain('Next steps:');
-    logger.plain('  1. Start your web application');
-    logger.plain('  2. Run: spectra --url http://localhost:5173');
+    logger.plain('  1. Install Playwright: pnpm add -D @playwright/test');
+    logger.plain('  2. Install the browser: pnpm exec playwright install chromium');
+    logger.plain('  3. Start your web application');
+    logger.plain('  4. Run: spectra --url http://localhost:5173');
     logger.plain('');
     return true;
   }
@@ -281,9 +283,9 @@ async function runScope(
   logger.plain(`  Test files: ${testCount}`);
   logger.plain('');
   logger.plain('Commands:');
-  logger.plain('  pnpm test          Run all tests');
-  logger.plain('  pnpm test:ui       Run with UI');
-  logger.plain('  pnpm report        View report');
+  logger.plain('  npx playwright test                                  Run all tests');
+  logger.plain('  npx playwright test --ui                             Run with UI');
+  logger.plain('  npx playwright show-report .spectra/output/reports   View report');
   logger.plain('');
 
   return ok;

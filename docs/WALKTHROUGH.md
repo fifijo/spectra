@@ -131,7 +131,7 @@ npx spectra --url http://localhost:5173
 │  pages/LoginPage.ts     ← Page Object (fixed)                  │
 │  tests/login.spec.ts    ← Working tests                         │
 │                                                                 │
-│  $ pnpm test                                                    │
+│  $ npx playwright test                                          │
 │  ✓ login.spec.ts (3 tests)                                     │
 │  3 passed                                                       │
 └─────────────────────────────────────────────────────────────────┘
@@ -232,25 +232,25 @@ npx spectra --batch scopes-batch.json
 
 ```bash
 # Run tests
-pnpm test
+npx playwright test
 
 # Run seed spec to verify environment
-pnpm test:seed
+npx playwright test tests/seed.spec.ts
 
 # View report
-pnpm report
+npx playwright show-report .spectra/output/reports
 
 # Check generated files
 ls pages/    # Page Objects
 ls tests/    # Test files
 
 # Cross-browser testing
-SPECTRA_BROWSERS=firefox pnpm test
-SPECTRA_BROWSERS=all pnpm test    # All browsers + mobile
+SPECTRA_BROWSERS=firefox npx playwright test
+SPECTRA_BROWSERS=all npx playwright test    # All browsers + mobile
 
 # Filter by tags
-pnpm test --grep @smoke           # Only smoke tests
-pnpm test --grep-invert @slow     # Skip slow tests
+npx playwright test --grep @smoke         # Only smoke tests
+npx playwright test --grep-invert @slow   # Skip slow tests
 ```
 
 ---
@@ -267,12 +267,12 @@ pnpm test --grep-invert @slow     # Skip slow tests
 | `npx spectra -u URL -m` | Manual Cursor mode |
 | `npx spectra -u URL --debug` | Enable debug output |
 | `npx spectra -b FILE.json` | Run scopes from JSON config |
-| `pnpm test` | Run all tests |
-| `pnpm test:seed` | Run seed spec only |
-| `pnpm test:headed` | Run with visible browser |
-| `pnpm test:ui` | Run with Playwright UI |
-| `pnpm test --grep @tag` | Filter by tag |
-| `pnpm report` | View HTML report |
+| `npx playwright test` | Run all tests |
+| `npx playwright test tests/seed.spec.ts` | Run seed spec only |
+| `npx playwright test --headed` | Run with visible browser |
+| `npx playwright test --ui` | Run with Playwright UI |
+| `npx playwright test --grep @tag` | Filter by tag |
+| `npx playwright show-report .spectra/output/reports` | View HTML report |
 
 ## Environment Variables
 

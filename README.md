@@ -190,7 +190,7 @@ pnpm run build
 cd /path/to/your/app && pnpm dev
 
 # Run the seed spec to verify environment
-pnpm test:seed
+npx playwright test tests/seed.spec.ts
 
 # Run Spectra
 npx spectra --url http://localhost:5173
@@ -597,7 +597,7 @@ npx spectra
 SPECTRA_BROWSERS=chromium,firefox npx spectra --url http://localhost:5173
 
 # Run only smoke tests
-SPECTRA_TAGS=@smoke pnpm test
+SPECTRA_TAGS=@smoke npx playwright test
 ```
 
 ### Playwright Configuration
@@ -623,30 +623,30 @@ export default defineConfig({
 
 ```bash
 # Run all tests
-pnpm test
+npx playwright test
 
 # Run with visible browser
-pnpm test:headed
+npx playwright test --headed
 
 # Run with Playwright UI
-pnpm test:ui
+npx playwright test --ui
 
 # Run specific test file
-pnpm exec playwright test tests/auth.spec.ts
+npx playwright test tests/auth.spec.ts
 
 # View HTML report
-pnpm report
+npx playwright show-report .spectra/output/reports
 
 # Cross-browser testing
-SPECTRA_BROWSERS=firefox pnpm test
-SPECTRA_BROWSERS=chromium,firefox pnpm test
-SPECTRA_BROWSERS=all pnpm test   # All browsers + mobile
+SPECTRA_BROWSERS=firefox npx playwright test
+SPECTRA_BROWSERS=chromium,firefox npx playwright test
+SPECTRA_BROWSERS=all npx playwright test   # All browsers + mobile
 
 # Filter by tags
-pnpm test --grep @smoke          # Only smoke tests
-pnpm test --grep @critical       # Only critical tests
-pnpm test --grep-invert @slow    # Skip slow tests
-pnpm test --grep "@auth|@login"  # Multiple tags (OR)
+npx playwright test --grep @smoke          # Only smoke tests
+npx playwright test --grep @critical       # Only critical tests
+npx playwright test --grep-invert @slow    # Skip slow tests
+npx playwright test --grep "@auth|@login"  # Multiple tags (OR)
 ```
 
 ### Test Tags

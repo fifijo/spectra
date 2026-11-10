@@ -91,23 +91,23 @@ npx spectra -u http://localhost:5173 --debug
 ## Test Commands
 
 ```bash
-pnpm test                        # Run all tests (chromium)
-pnpm test:headed                 # With browser visible
-pnpm test:ui                     # Playwright UI
-pnpm test:seed                   # Run seed spec only
-pnpm report                      # HTML report
+npx playwright test                      # Run all tests (chromium)
+npx playwright test --headed             # With browser visible
+npx playwright test --ui                 # Playwright UI
+npx playwright test tests/seed.spec.ts   # Run seed spec only
+npx playwright show-report .spectra/output/reports   # HTML report
 
 # Cross-browser testing
-SPECTRA_BROWSERS=firefox pnpm test
-SPECTRA_BROWSERS=chromium,firefox pnpm test
-SPECTRA_BROWSERS=all pnpm test   # All browsers + mobile
+SPECTRA_BROWSERS=firefox npx playwright test
+SPECTRA_BROWSERS=chromium,firefox npx playwright test
+SPECTRA_BROWSERS=all npx playwright test   # All browsers + mobile
 
 # Filter by tags
-pnpm test --grep @smoke          # Only @smoke tests
-pnpm test --grep @critical       # Only @critical tests
-pnpm test --grep-invert @slow    # Skip @slow tests
-pnpm test --grep "@auth|@login"  # Multiple tags (OR)
-SPECTRA_TAGS=@smoke pnpm test    # Via env var
+npx playwright test --grep @smoke          # Only @smoke tests
+npx playwright test --grep @critical       # Only @critical tests
+npx playwright test --grep-invert @slow    # Skip @slow tests
+npx playwright test --grep "@auth|@login"  # Multiple tags (OR)
+SPECTRA_TAGS=@smoke npx playwright test    # Via env var
 ```
 
 ---
