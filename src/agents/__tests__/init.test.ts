@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -159,6 +160,53 @@ describe('initAgents', () => {
 
     const installed = path.join(projectRoot, '.spectra', 'agents', 'shared', 'config.md');
     expect(fs.existsSync(installed)).toBe(false);
+  });
+
+  it('does not delete a file outside the project', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+
+    const outside = path.join(projectRoot, '..', 'outside-secret.txt');
+    fs.writeFileSync(outside, 'secret', 'utf-8');
+    const hash = createHash('sha256').update(fs.readFileSync(outside)).digest('hex');
+
+    const manifestPath = path.join(projectRoot, '.spectra', 'agents', '.templates.json');
+    fs.mkdirSync(path.dirname(manifestPath), { recursive: true });
+    fs.writeFileSync(
+      manifestPath,
+      JSON.stringify({ '../../../outside-secret.txt': hash }),
+      'utf-8',
+    );
+
+    try {
+      initAgents(projectRoot);
+
+      expect(fs.existsSync(outside)).toBe(true);
+    } finally {
+      fs.rmSync(outside, { force: true });
+    }
+  });
+
+  it('ignores a manifest that is not an object', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+
+    const manifestPath = path.join(projectRoot, '.spectra', 'agents', '.templates.json');
+    fs.mkdirSync(path.dirname(manifestPath), { recursive: true });
+    fs.writeFileSync(manifestPath, 'null', 'utf-8');
+
+    expect(() => initAgents(projectRoot)).not.toThrow();
+  });
+
+  it('ignores a manifest key that names the destination folder itself', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+
+    const manifestPath = path.join(projectRoot, '.spectra', 'agents', '.templates.json');
+    fs.mkdirSync(path.dirname(manifestPath), { recursive: true });
+    fs.writeFileSync(manifestPath, JSON.stringify({ '.': 'deadbeef' }), 'utf-8');
+
+    expect(() => initAgents(projectRoot)).not.toThrow();
   });
 });
 

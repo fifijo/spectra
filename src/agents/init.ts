@@ -16,10 +16,23 @@ function hash(content: Buffer): string {
 function readManifest(file: string): Record<string, string> {
   if (!fs.existsSync(file)) return {};
   try {
-    return JSON.parse(fs.readFileSync(file, 'utf-8'));
+    const parsed: unknown = JSON.parse(fs.readFileSync(file, 'utf-8'));
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {};
+    return parsed as Record<string, string>;
   } catch {
     return {};
   }
+}
+
+/**
+ * The path of an installed file, or null when the key points outside the
+ * destination. A manifest is a file in the project; it must not be able to
+ * name a file outside it.
+ */
+function insideDest(dest: string, key: string): string | null {
+  const root = path.resolve(dest);
+  const file = path.resolve(root, key);
+  return file.startsWith(root + path.sep) ? file : null;
 }
 
 /**
@@ -138,7 +151,11 @@ function installTemplates(src: string, dest: string): void {
   // Templates that no longer exist are removed, unless the user changed them.
   for (const key of Object.keys(installed)) {
     if (next[key]) continue;
-    const file = path.join(dest, key);
+    const file = insideDest(dest, key);
+    if (!file) {
+      logger.warn(`Ignored a template path outside the project: ${key}`);
+      continue;
+    }
     if (!fs.existsSync(file)) continue;
     if (hash(fs.readFileSync(file)) !== installed[key]) {
       logger.warn(`Kept your edited ${key} (its template is gone)`);
