@@ -90,7 +90,12 @@ export async function run(options: SpectraOptions = {}): Promise<boolean> {
   if (options.init) {
     logger.banner();
     logger.info('Scaffolding Spectra project...');
-    scaffold(cwd);
+    try {
+      scaffold(cwd);
+    } catch (err) {
+      logger.error(err instanceof Error ? err.message : String(err));
+      return false;
+    }
     logger.plain('');
     logger.success('Spectra project initialized!');
     logger.plain('');
@@ -108,20 +113,20 @@ export async function run(options: SpectraOptions = {}): Promise<boolean> {
     const batchPath = path.resolve(cwd, options.batch);
     if (!fs.existsSync(batchPath)) {
       logger.error(`Batch file not found: ${batchPath}`);
-      process.exit(1);
+      return false;
     }
 
     const parsed = parseBatchConfig(fs.readFileSync(batchPath, 'utf-8'));
     if (!parsed.ok) {
       logger.error(`Invalid batch file ${batchPath}: ${parsed.error}`);
-      process.exit(1);
+      return false;
     }
     const batchConfig = parsed.batch;
 
     const batchUrl = options.url ?? batchConfig.url ?? process.env.SPECTRA_URL ?? '';
     if (!batchUrl) {
       logger.error('Error: URL required. Use --url, set SPECTRA_URL, or add "url" to batch config');
-      process.exit(1);
+      return false;
     }
 
     logger.banner();
@@ -192,7 +197,7 @@ async function runScope(
   if (!url) {
     logger.error('Error: URL required. Use --url or set SPECTRA_URL');
     logger.plain('Run spectra --help for usage information.');
-    process.exit(1);
+    return false;
   }
 
   const mode = detectMode(options.manual);
@@ -208,7 +213,12 @@ async function runScope(
 
   // Always refresh the agent templates so an upgraded package ships new instructions
   logger.debug('cli', 'Refreshing agent templates...');
-  initAgents(cwd);
+  try {
+    initAgents(cwd);
+  } catch (err) {
+    logger.error(err instanceof Error ? err.message : String(err));
+    return false;
+  }
 
   logger.banner();
   logger.cyan(`Mode: ${mode}`);

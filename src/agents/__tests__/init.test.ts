@@ -104,21 +104,15 @@ describe('initAgents', () => {
     expect(content).toBe('# Planner Agent');
   });
 
-  it('exits with error when template directory is missing', () => {
+  it('throws when the template directory is missing', () => {
     const projectRoot = makeTmpDir();
     tmpDirs.push(projectRoot);
 
     // Remove templates so they don't exist
     fs.rmSync(templateDir, { recursive: true, force: true });
 
-    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
-      throw new Error('process.exit called');
-    }) as never);
+    expect(() => initAgents(projectRoot)).toThrow(/Template directory not found/);
 
-    expect(() => initAgents(projectRoot)).toThrow('process.exit called');
-    expect(exitSpy).toHaveBeenCalledWith(1);
-
-    exitSpy.mockRestore();
     // Recreate for cleanup
     fs.mkdirSync(templateDir, { recursive: true });
   });

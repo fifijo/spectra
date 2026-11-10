@@ -98,17 +98,37 @@ describe('run', () => {
       expect(logger.banner).toHaveBeenCalled();
       expect(logger.success).toHaveBeenCalled();
     });
+
+    it('fails when the scaffold throws', async () => {
+      vi.mocked(scaffold).mockImplementationOnce(() => {
+        throw new Error('Template directory not found: /templates/agents');
+      });
+
+      const ok = await run({ init: true });
+
+      expect(ok).toBe(false);
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining('Template directory not found'),
+      );
+    });
   });
 
   describe('URL validation', () => {
-    it('exits when no URL is provided', async () => {
+    it('fails when no URL is provided', async () => {
+      const ok = await run({});
+
+      expect(ok).toBe(false);
+      expect(logger.error).toHaveBeenCalled();
+    });
+
+    it('never exits the host process', async () => {
       const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
-        throw new Error('process.exit');
+        throw new Error('the library tried to exit the host');
       }) as never);
 
-      await expect(run({})).rejects.toThrow('process.exit');
-      expect(exitSpy).toHaveBeenCalledWith(1);
-      expect(logger.error).toHaveBeenCalled();
+      await run({});
+
+      expect(exitSpy).not.toHaveBeenCalled();
 
       exitSpy.mockRestore();
     });
@@ -237,44 +257,35 @@ describe('run', () => {
   });
 
   describe('--batch mode', () => {
-    it('exits when batch file does not exist', async () => {
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
-        throw new Error('process.exit');
-      }) as never);
+    it('fails when the batch file does not exist', async () => {
+      const ok = await run({ batch: 'nonexistent.json' });
 
-      await expect(run({ batch: 'nonexistent.json' })).rejects.toThrow('process.exit');
+      expect(ok).toBe(false);
       expect(logger.error).toHaveBeenCalled();
-
-      exitSpy.mockRestore();
+      expect(runAgent).not.toHaveBeenCalled();
     });
 
-    it('exits when batch file has invalid JSON', async () => {
+    it('fails when the batch file has invalid JSON', async () => {
       const batchPath = path.join(tmpDir, 'bad.json');
       fs.writeFileSync(batchPath, 'not json', 'utf-8');
 
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
-        throw new Error('process.exit');
-      }) as never);
+      const ok = await run({ batch: 'bad.json' });
 
-      await expect(run({ batch: 'bad.json' })).rejects.toThrow('process.exit');
-
-      exitSpy.mockRestore();
+      expect(ok).toBe(false);
+      expect(logger.error).toHaveBeenCalled();
     });
 
-    it('exits when batch has no URL and none provided', async () => {
+    it('fails when the batch has no URL and none provided', async () => {
       const batchPath = path.join(tmpDir, 'batch.json');
       fs.writeFileSync(batchPath, JSON.stringify({ scopes: [{ file: 'SCOPE.md' }] }), 'utf-8');
 
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
-        throw new Error('process.exit');
-      }) as never);
+      const ok = await run({ batch: 'batch.json' });
 
-      await expect(run({ batch: 'batch.json' })).rejects.toThrow('process.exit');
-
-      exitSpy.mockRestore();
+      expect(ok).toBe(false);
+      expect(logger.error).toHaveBeenCalled();
     });
 
-    it('exits when batch has empty scopes array', async () => {
+    it('fails when the batch has an empty scopes array', async () => {
       const batchPath = path.join(tmpDir, 'batch.json');
       fs.writeFileSync(
         batchPath,
@@ -282,16 +293,13 @@ describe('run', () => {
         'utf-8',
       );
 
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
-        throw new Error('process.exit');
-      }) as never);
+      const ok = await run({ batch: 'batch.json' });
 
-      await expect(run({ batch: 'batch.json' })).rejects.toThrow('process.exit');
-
-      exitSpy.mockRestore();
+      expect(ok).toBe(false);
+      expect(logger.error).toHaveBeenCalled();
     });
 
-    it('exits when a scope has a misspelled key', async () => {
+    it('fails when a scope has a misspelled key', async () => {
       const batchPath = path.join(tmpDir, 'batch.json');
       fs.writeFileSync(
         batchPath,
@@ -302,14 +310,11 @@ describe('run', () => {
         'utf-8',
       );
 
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
-        throw new Error('process.exit');
-      }) as never);
+      const ok = await run({ batch: 'batch.json' });
 
-      await expect(run({ batch: 'batch.json' })).rejects.toThrow('process.exit');
+      expect(ok).toBe(false);
+      expect(logger.error).toHaveBeenCalled();
       expect(runAgent).not.toHaveBeenCalled();
-
-      exitSpy.mockRestore();
     });
 
     it('passes page and scope of every batch scope to the run', async () => {

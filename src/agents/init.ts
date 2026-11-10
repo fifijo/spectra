@@ -31,8 +31,7 @@ export function initAgents(projectRoot: string): void {
   const agentsDest = path.join(projectRoot, '.spectra', 'agents');
 
   if (!fs.existsSync(agentsSource)) {
-    logger.error(`Template directory not found: ${agentsSource}`);
-    process.exit(1);
+    throw new Error(`Template directory not found: ${agentsSource}`);
   }
 
   installTemplates(agentsSource, agentsDest);
