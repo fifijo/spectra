@@ -576,6 +576,7 @@ spectra/
 | `--file` | `-f` | Scope file path | `-f SCOPE.md` |
 | `--batch` | `-b` | JSON file with scope definitions | `-b scopes-batch.json` |
 | `--manual` | `-m` | Force manual Cursor mode | `-m` |
+| `--mcp` | | Serve the Spectrum over MCP, so your chat or CLI drives it | `--mcp --url http://localhost:5173` |
 | `--init` | | Scaffold project structure | `--init` |
 | `--debug` | | Enable debug output | `--debug` |
 | `--help` | `-h` | Show help | `-h` |
@@ -679,6 +680,39 @@ npx spectra --url http://localhost:5173
 All three agents run automatically without intervention. Each agent finishes before the
 next one starts, so the Generator always reads a finished test plan.
 
+### Native Mode (your own chat or CLI)
+
+You do not need Cursor — or any agent CLI. If you already talk to a model in
+a chat or a terminal, that model can play the Agents:
+
+```bash
+npx spectra --mcp --url http://localhost:5173
+```
+
+This serves the Spectrum over MCP. Your host's model asks for the next
+Agent's brief, does the work it describes, and says it is done:
+
+| Tool | What it does |
+|------|--------------|
+| `spectra_next` | Returns the next Agent's brief: its instructions, the scope, and the files to write |
+| `spectra_done` | Checks the Agent wrote what the catalogue says, writes the completion signal, and returns the next brief |
+| `spectra_status` | Which Agent is running, and which ones are finished |
+
+`spectra --init` writes an MCP config with this server in it, so most hosts
+find it on their own:
+
+```json
+{
+  "mcpServers": {
+    "playwright": { "command": "npx", "args": ["@playwright/mcp@latest", "--browser", "chromium"] },
+    "spectra": { "command": "npx", "args": ["spectra", "--mcp", "--url", "http://localhost:5173"] }
+  }
+}
+```
+
+Put it in `.mcp.json` (Claude Code, and any host that reads it) or in
+`.cursor/mcp.json` (Cursor). Point the `--url` at your application.
+
 ### Manual Cursor Mode
 
 If no CLI is available, or you prefer control:
@@ -692,6 +726,9 @@ and waits until that agent writes its completion signal before starting the next
 If the signal does not arrive within 30 minutes, the run stops with an error.
 
 ### Installing CLI Tools
+
+Only needed for the automated mode — native mode uses the model you already
+have:
 
 ```bash
 # Option 1: cursor-agent

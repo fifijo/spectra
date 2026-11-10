@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest", "--browser", "chromium"]
+    },
+    "spectra": {
+      "command": "npx",
+      "args": ["spectra", "--mcp", "--url", "http://localhost:5173"]
+    }
+  }
+}

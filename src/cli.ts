@@ -9,11 +9,12 @@ import {
 } from './agents/catalogue.js';
 import { initAgents, scaffold } from './agents/init.js';
 import { runAgent } from './agents/runner.js';
+import { serveMcp } from './mcp/server.js';
 import { parseBatchConfig } from './utils/batch.js';
 import { DEFAULT_OUTPUT_DIR } from './utils/constants.js';
 import { detectMode } from './utils/detect-mode.js';
 import { OUTPUT_DIRS } from './utils/layout.js';
-import { logger } from './utils/logger.js';
+import { logger, setLogTarget } from './utils/logger.js';
 import { createScopeContext, type Scope } from './utils/scope.js';
 
 export interface SpectraOptions {
@@ -24,6 +25,7 @@ export interface SpectraOptions {
   batch?: string;
   manual?: boolean;
   init?: boolean;
+  mcp?: boolean;
   debug?: boolean;
 }
 
@@ -83,8 +85,63 @@ function listFiles(dir: string, ext: string): string[] {
   return out;
 }
 
+/**
+ * Serve the Spectrum over MCP, so the model the user is already talking to
+ * (in a chat or a CLI) does the Agent work. No agent CLI is started and the
+ * host's model is the one that writes the files.
+ */
+function runAsMcpServer(cwd: string, options: SpectraOptions): boolean {
+  // stdout speaks JSON-RPC from here on: the log lines go to stderr.
+  setLogTarget('stderr');
+
+  const url = options.url ?? process.env.SPECTRA_URL ?? '';
+  if (!url) {
+    logger.error('Error: URL required. Use --url or set SPECTRA_URL');
+    logger.plain('Run spectra --help for usage information.');
+    return false;
+  }
+
+  const agentsDir = path.join(cwd, '.spectra', 'agents');
+  const outputDir = path.join(cwd, DEFAULT_OUTPUT_DIR);
+
+  for (const dir of OUTPUT_DIRS) {
+    fs.mkdirSync(path.join(outputDir, dir), { recursive: true });
+  }
+
+  try {
+    initAgents(cwd);
+  } catch (err) {
+    logger.error(err instanceof Error ? err.message : String(err));
+    return false;
+  }
+
+  const scope: Scope = {
+    url,
+    page: options.page,
+    scope: options.scope,
+    file: options.file,
+  };
+  createScopeContext(path.join(agentsDir, SCOPE_CONTEXT), scope);
+
+  logger.banner();
+  logger.cyan('Mode: mcp');
+  logger.cyan(`Target: ${url}`);
+  logger.plain('The model in your chat or CLI plays the Agent. Call spectra_next,');
+  logger.plain('do the work it describes, then call spectra_done.');
+  logger.plain('');
+
+  serveMcp({ outputDir, agentsDir, agents: AGENTS, index: 0 }, process.stdin, process.stdout);
+  return true;
+}
+
 export async function run(options: SpectraOptions = {}): Promise<boolean> {
   const cwd = process.cwd();
+
+  // --mcp: serve the Spectrum over MCP, so the model the user is already
+  // talking to (in a chat or a CLI) does the Agent work.
+  if (options.mcp) {
+    return runAsMcpServer(cwd, options);
+  }
 
   // --init: scaffold project
   if (options.init) {

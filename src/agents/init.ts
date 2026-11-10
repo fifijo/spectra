@@ -99,6 +99,14 @@ export function scaffold(projectRoot: string): void {
     fs.copyFileSync(mcpSource, mcpDest);
   }
 
+  // Copy the host MCP config if not present: it lets the model in the user's
+  // own chat or CLI drive the Spectrum, without an agent CLI.
+  const hostMcpSource = path.join(TEMPLATE_DIR, '.mcp.json');
+  const hostMcpDest = path.join(projectRoot, '.mcp.json');
+  if (fs.existsSync(hostMcpSource) && !fs.existsSync(hostMcpDest)) {
+    fs.copyFileSync(hostMcpSource, hostMcpDest);
+  }
+
   // Copy the seed spec if not present: the gate docs ask the user to run it.
   const seedSource = path.join(TEMPLATE_DIR, 'tests', 'seed.spec.ts');
   const seedDest = path.join(projectRoot, 'tests', 'seed.spec.ts');

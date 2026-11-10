@@ -65,6 +65,7 @@ function setupTemplates(templateRoot: string): void {
   fs.writeFileSync(path.join(fixturesDir, 'pages.ts'), 'export const pages = {};', 'utf-8');
   fs.writeFileSync(path.join(configDir, 'playwright.config.ts'), '// config', 'utf-8');
   fs.writeFileSync(path.join(cursorDir, 'mcp.json'), '{}', 'utf-8');
+  fs.writeFileSync(path.join(templateRoot, '.mcp.json'), '{}', 'utf-8');
   fs.writeFileSync(path.join(testsDir, 'seed.spec.ts'), '// seed', 'utf-8');
   fs.writeFileSync(path.join(workflowDir, 'test.yml'), 'name: test', 'utf-8');
 }
@@ -319,6 +320,26 @@ describe('scaffold', () => {
     scaffold(projectRoot);
 
     expect(fs.existsSync(path.join(projectRoot, '.cursor', 'mcp.json'))).toBe(true);
+  });
+
+  it('copies the host mcp config, so a chat or CLI can drive the Spectrum', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+
+    scaffold(projectRoot);
+
+    expect(fs.existsSync(path.join(projectRoot, '.mcp.json'))).toBe(true);
+  });
+
+  it('does not overwrite an existing host mcp config', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+
+    fs.writeFileSync(path.join(projectRoot, '.mcp.json'), 'mine', 'utf-8');
+
+    scaffold(projectRoot);
+
+    expect(fs.readFileSync(path.join(projectRoot, '.mcp.json'), 'utf-8')).toBe('mine');
   });
 
   it('copies a seed spec when the project has none', () => {

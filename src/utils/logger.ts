@@ -13,6 +13,17 @@ export function isDebug(): boolean {
   return process.env.DEBUG === '1' || process.env.SPECTRA_DEBUG === '1';
 }
 
+/**
+ * Where the log lines go. An MCP server speaks JSON-RPC on stdout, so its
+ * logs have to go to stderr instead.
+ */
+let out: (msg: string) => void = (msg) => console.log(msg);
+
+/** Send the log lines to stdout (the default) or stderr (an MCP server). */
+export function setLogTarget(target: 'stdout' | 'stderr'): void {
+  out = target === 'stderr' ? (msg) => console.error(msg) : (msg) => console.log(msg);
+}
+
 function timestamp(): string {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -25,49 +36,49 @@ function withTimestamp(msg: string, color: string): string {
 
 export const logger = {
   info(msg: string) {
-    console.log(withTimestamp(msg, BLUE));
+    out(withTimestamp(msg, BLUE));
   },
   success(msg: string) {
-    console.log(withTimestamp(msg, GREEN));
+    out(withTimestamp(msg, GREEN));
   },
   warn(msg: string) {
-    console.log(withTimestamp(msg, YELLOW));
+    out(withTimestamp(msg, YELLOW));
   },
   error(msg: string) {
     console.error(withTimestamp(msg, RED));
   },
   cyan(msg: string) {
-    console.log(withTimestamp(msg, CYAN));
+    out(withTimestamp(msg, CYAN));
   },
   plain(msg: string) {
-    console.log(isDebug() ? `${timestamp()} ${msg}` : msg);
+    out(isDebug() ? `${timestamp()} ${msg}` : msg);
   },
   banner() {
-    if (isDebug()) console.log('');
-    console.log(`${CYAN}   ◐ ◑ ◒${RESET}`);
-    console.log(`${CYAN}  SPECTRA${RESET}`);
-    console.log(`  ${MAGENTA}Full-spectrum test automation${RESET}`);
-    console.log('  ─────────────────────────────────');
-    console.log('');
+    if (isDebug()) out('');
+    out(`${CYAN}   ◐ ◑ ◒${RESET}`);
+    out(`${CYAN}  SPECTRA${RESET}`);
+    out(`  ${MAGENTA}Full-spectrum test automation${RESET}`);
+    out('  ─────────────────────────────────');
+    out('');
   },
   separator(color: string, label: string) {
     const c = color === 'blue' ? BLUE : color === 'green' ? GREEN : MAGENTA;
-    console.log('');
-    console.log(`${c}═══════════════════════════════════════════════════════${RESET}`);
-    console.log(`${c}  ${label}${RESET}`);
-    console.log(`${c}═══════════════════════════════════════════════════════${RESET}`);
-    console.log('');
+    out('');
+    out(`${c}═══════════════════════════════════════════════════════${RESET}`);
+    out(`${c}  ${label}${RESET}`);
+    out(`${c}═══════════════════════════════════════════════════════${RESET}`);
+    out('');
   },
   debug(label: string, msg: string) {
     if (!isDebug()) return;
-    console.log(`${timestamp()} ${GREEN}[DEBUG]${RESET} ${MAGENTA}[${label}]${RESET} ${msg}`);
+    out(`${timestamp()} ${GREEN}[DEBUG]${RESET} ${MAGENTA}[${label}]${RESET} ${msg}`);
   },
   prompt(label: string, content: string) {
     if (!isDebug()) return;
-    console.log(`${timestamp()} ${MAGENTA}[PROMPT]${RESET} ${CYAN}${label}${RESET}`);
-    console.log('```');
-    console.log(content);
-    console.log('```');
-    console.log('');
+    out(`${timestamp()} ${MAGENTA}[PROMPT]${RESET} ${CYAN}${label}${RESET}`);
+    out('```');
+    out(content);
+    out('```');
+    out('');
   },
 };
