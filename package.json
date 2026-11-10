@@ -78,8 +78,10 @@
     "@changesets/cli": "^2.31.0",
     "@playwright/test": "^1.59.1",
     "@types/node": "^25.6.0",
+    "@vitest/coverage-v8": "^4.1.12",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.5"
+    "vite": "^8.1.6",
+    "vitest": "^4.1.12"
   },
   "repository": {
     "type": "git",
@@ -88,5 +90,12 @@
   "homepage": "https://github.com/fifijo/spectra#readme",
   "bugs": {
     "url": "https://github.com/fifijo/spectra/issues"
+  },
+  "pnpm": {
+    "overrides": {
+      "read-yaml-file>js-yaml": "3.15.2",
+      "@changesets/parse>js-yaml": "4.3.2",
+      "source-map-js": "^1.2.2"
+    }
   }
 }

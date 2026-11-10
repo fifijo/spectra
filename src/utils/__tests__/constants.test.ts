@@ -21,4 +21,10 @@ describe('constants', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, 'package.json'), 'utf-8'));
     expect(pkg.scripts['typecheck:test']).toContain('tsconfig.test.json');
   });
+
+  it('package.json has a test:unit:coverage script and @vitest/coverage-v8 devDependency', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, 'package.json'), 'utf-8'));
+    expect(pkg.scripts['test:unit:coverage']).toBeDefined();
+    expect(pkg.devDependencies['@vitest/coverage-v8']).toBeDefined();
+  });
 });
