@@ -278,7 +278,7 @@ pnpm test --grep-invert @slow     # Skip slow tests
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `SPECTRA_URL` | Base URL for tests | `http://localhost:5173` |
+| `SPECTRA_URL` | Base URL for tests | (none — required) |
 | `SPECTRA_BROWSERS` | Browsers to test | `chromium` |
 | `SPECTRA_TAGS` | Filter tests by tags | (all tests) |
 | `SPECTRA_DEBUG` | Enable debug output | (unset) |
@@ -352,6 +352,12 @@ Use manual mode:
 npx spectra --url http://localhost:5173 --manual
 ```
 
+Spectra writes the prompt of each agent to `.spectra/agents/<agent>/current-prompt.md`
+and waits until that agent writes its completion signal
+(`.spectra/output/plans/.complete`, `.spectra/output/tests/.complete`,
+`.spectra/output/reports/.complete`) before starting the next one.
+If the signal does not arrive within 30 minutes, the run stops with an error.
+
 ### Scope files not found in batch mode
 
 1. Check file paths in batch JSON config
@@ -366,6 +372,7 @@ npx spectra --url http://localhost:5173 --manual
 spectra/
 ├── src/                        # TypeScript source (CLI & library)
 │   ├── bin.ts                  # CLI entry point
+│   ├── args.ts                 # Command line parsing
 │   ├── cli.ts                  # Public API (library module)
 │   ├── agents/                 # Agent runner & scaffolding
 │   └── utils/                  # Shared utilities

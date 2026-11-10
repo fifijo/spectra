@@ -8,7 +8,10 @@ const BLUE = '\x1b[34m';
 const CYAN = '\x1b[36m';
 const MAGENTA = '\x1b[35m';
 
-const DEBUG = process.env.DEBUG === '1';
+/** Read lazily: the CLI sets DEBUG after this module is loaded. */
+export function isDebug(): boolean {
+  return process.env.DEBUG === '1' || process.env.SPECTRA_DEBUG === '1';
+}
 
 function timestamp(): string {
   const now = new Date();
@@ -17,7 +20,7 @@ function timestamp(): string {
 }
 
 function withTimestamp(msg: string, color: string): string {
-  return DEBUG ? `${timestamp()} ${color}${msg}${RESET}` : `${color}${msg}${RESET}`;
+  return isDebug() ? `${timestamp()} ${color}${msg}${RESET}` : `${color}${msg}${RESET}`;
 }
 
 export const logger = {
@@ -36,14 +39,11 @@ export const logger = {
   cyan(msg: string) {
     console.log(withTimestamp(msg, CYAN));
   },
-  magenta(msg: string) {
-    console.log(withTimestamp(msg, MAGENTA));
-  },
   plain(msg: string) {
-    console.log(DEBUG ? `${timestamp()} ${msg}` : msg);
+    console.log(isDebug() ? `${timestamp()} ${msg}` : msg);
   },
   banner() {
-    if (DEBUG) console.log('');
+    if (isDebug()) console.log('');
     console.log(`${CYAN}   ◐ ◑ ◒${RESET}`);
     console.log(`${CYAN}  SPECTRA${RESET}`);
     console.log(`  ${MAGENTA}Full-spectrum test automation${RESET}`);
@@ -59,23 +59,15 @@ export const logger = {
     console.log('');
   },
   debug(label: string, msg: string) {
-    if (!DEBUG) return;
+    if (!isDebug()) return;
     console.log(`${timestamp()} ${GREEN}[DEBUG]${RESET} ${MAGENTA}[${label}]${RESET} ${msg}`);
   },
   prompt(label: string, content: string) {
-    if (!DEBUG) return;
+    if (!isDebug()) return;
     console.log(`${timestamp()} ${MAGENTA}[PROMPT]${RESET} ${CYAN}${label}${RESET}`);
     console.log('```');
     console.log(content);
     console.log('```');
     console.log('');
-  },
-  stream(prefix: string) {
-    return {
-      write: (data: string) => {
-        if (!DEBUG) return;
-        process.stdout.write(`${timestamp()} ${prefix} ${data}`);
-      },
-    };
   },
 };

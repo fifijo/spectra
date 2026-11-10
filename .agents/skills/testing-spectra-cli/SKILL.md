@@ -43,7 +43,7 @@ node dist/bin.js --batch /tmp/batch.json
 
 ### 4. Compiled Output Inspection
 For security-sensitive changes, inspect the compiled JS directly:
-- `dist/agents/runner.js`: Should use `execFileSync` with array args (not template literal shell interpolation)
+- `dist/agents/runner.js`: Should spawn the agent CLI with an args array (not template literal shell interpolation)
 - `dist/utils/detect-mode.js`: Should contain `process.platform === 'win32'` check with `where` fallback
 
 ### 5. Package Contents
@@ -55,8 +55,9 @@ npm pack --dry-run
 - No `.env` or secret files should be included
 
 ## Architecture Notes
-- `src/bin.ts` is the CLI entry point (arg parsing + execution)
-- `src/cli.ts` is a pure library module (exports `run()` and `SpectraOptions`)
+- `src/bin.ts` is the CLI entry point (execution only)
+- `src/args.ts` parses `process.argv` into `SpectraOptions`
+- `src/cli.ts` is a pure library module (exports async `run()` and `SpectraOptions`)
 - `src/index.ts` re-exports from `cli.ts` — importing this must NOT trigger CLI behavior
 - `package.json` `bin` field points to `dist/bin.js`
 - Agents run in "manual" mode when neither `cursor-agent` nor `claude` CLI is installed

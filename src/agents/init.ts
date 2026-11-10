@@ -1,8 +1,26 @@
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
 import { TEMPLATE_DIR } from '../utils/constants.js';
+import { PROJECT_DIRS } from '../utils/layout.js';
 import { logger } from '../utils/logger.js';
+
+/** Remembers which template version each installed file came from. */
+const MANIFEST = '.templates.json';
+
+function hash(content: Buffer): string {
+  return createHash('sha256').update(content).digest('hex');
+}
+
+function readManifest(file: string): Record<string, string> {
+  if (!fs.existsSync(file)) return {};
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf-8'));
+  } catch {
+    return {};
+  }
+}
 
 /**
  * Copy template files from the package's templates/ directory
@@ -17,7 +35,7 @@ export function initAgents(projectRoot: string): void {
     process.exit(1);
   }
 
-  copyDirRecursive(agentsSource, agentsDest);
+  installTemplates(agentsSource, agentsDest);
   logger.success('Agent templates initialized in .spectra/agents/');
 }
 
@@ -25,21 +43,7 @@ export function initAgents(projectRoot: string): void {
  * Scaffold the standard project structure for a new Spectra project.
  */
 export function scaffold(projectRoot: string): void {
-  const dirs = [
-    'tests/e2e',
-    'specs',
-    'pages',
-    'fixtures',
-    '.spectra/agents/planner',
-    '.spectra/agents/generator',
-    '.spectra/agents/healer',
-    '.spectra/agents/shared',
-    '.spectra/output/plans',
-    '.spectra/output/reports',
-    '.spectra/output/test-results',
-  ];
-
-  for (const dir of dirs) {
+  for (const dir of PROJECT_DIRS) {
     const full = path.join(projectRoot, dir);
     fs.mkdirSync(full, { recursive: true });
   }
@@ -50,7 +54,7 @@ export function scaffold(projectRoot: string): void {
   const docsSource = path.join(TEMPLATE_DIR, 'docs');
   const docsDest = path.join(projectRoot, 'docs');
   if (fs.existsSync(docsSource)) {
-    copyDirRecursive(docsSource, docsDest);
+    installTemplates(docsSource, docsDest);
   }
 
   // Copy fixture template if not present
@@ -64,17 +68,63 @@ export function scaffold(projectRoot: string): void {
   logger.success('Project scaffolded successfully.');
 }
 
-function copyDirRecursive(src: string, dest: string): void {
-  fs.mkdirSync(dest, { recursive: true });
+/**
+ * Install the templates of `src` into `dest`.
+ * A file the user changed is kept; the path of the new template is printed instead.
+ * A file whose template is gone is removed, unless the user changed it.
+ */
+function installTemplates(src: string, dest: string): void {
+  const manifestPath = path.join(dest, MANIFEST);
+  const installed = readManifest(manifestPath);
+  const next: Record<string, string> = {};
 
-  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
-    const srcPath = path.join(src, entry.name);
-    const destPath = path.join(dest, entry.name);
+  const walk = (from: string, to: string, rel: string): void => {
+    fs.mkdirSync(to, { recursive: true });
 
-    if (entry.isDirectory()) {
-      copyDirRecursive(srcPath, destPath);
-    } else {
-      fs.copyFileSync(srcPath, destPath);
+    for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
+      const fromPath = path.join(from, entry.name);
+      const toPath = path.join(to, entry.name);
+      const key = rel ? path.join(rel, entry.name) : entry.name;
+
+      if (entry.isDirectory()) {
+        walk(fromPath, toPath, key);
+        continue;
+      }
+
+      const template = fs.readFileSync(fromPath);
+      const templateHash = hash(template);
+
+      if (fs.existsSync(toPath)) {
+        const current = fs.readFileSync(toPath);
+        // The user changed the file when its hash is not the one we installed.
+        const changed = installed[key]
+          ? hash(current) !== installed[key]
+          : !current.equals(template);
+        if (changed) {
+          logger.warn(`Kept your edited ${key} (new template: ${fromPath})`);
+          next[key] = templateHash;
+          continue;
+        }
+      }
+
+      fs.copyFileSync(fromPath, toPath);
+      next[key] = templateHash;
     }
+  };
+
+  walk(src, dest, '');
+
+  // Templates that no longer exist are removed, unless the user changed them.
+  for (const key of Object.keys(installed)) {
+    if (next[key]) continue;
+    const file = path.join(dest, key);
+    if (!fs.existsSync(file)) continue;
+    if (hash(fs.readFileSync(file)) !== installed[key]) {
+      logger.warn(`Kept your edited ${key} (its template is gone)`);
+      continue;
+    }
+    fs.unlinkSync(file);
   }
+
+  fs.writeFileSync(manifestPath, `${JSON.stringify(next, null, 2)}\n`, 'utf-8');
 }

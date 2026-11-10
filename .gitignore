@@ -6,6 +6,8 @@ dist/
 
 # Spectra outputs
 .spectra/output/
+.spectra/agents/
+docs/.templates.json
 test-results/
 playwright-report/
 playwright/.cache/
@@ -25,6 +27,3 @@ playwright/.cache/
 
 # Biome
 .biome/
-
-# Keep agent definitions
-!.spectra/agents/

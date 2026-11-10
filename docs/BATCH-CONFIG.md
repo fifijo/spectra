@@ -10,7 +10,9 @@ This document describes the JSON structure for batch scope execution.
   "scopes": [
     {
       "name": "string (optional)",
-      "file": "string (required)",
+      "file": "string (optional)",
+      "page": "string (optional)",
+      "scope": "string (optional)",
       "description": "string (optional)"
     }
   ]
@@ -39,14 +41,24 @@ This document describes the JSON structure for batch scope execution.
 - **Description**: Human-readable name for the scope (used for display/logging)
 - **Example**: `"Login Form"`
 
-#### `file` (required)
+#### `file` (optional)
 - **Type**: `string`
 - **Description**: Path to the scope file (relative to current directory or absolute)
 - **Example**: `"SCOPE-login.md"` or `"./scopes/SCOPE-payment.md"`
 
+#### `page` (optional)
+- **Type**: `string`
+- **Description**: Page the run is pointed at, e.g. `/checkout`
+- **Example**: `"/login"`
+
+#### `scope` (optional)
+- **Type**: `string`
+- **Description**: The single feature the run should test on that page
+- **Example**: `"email and password validation"`
+
 #### `description` (optional)
 - **Type**: `string`
-- **Description**: Description of what this scope tests (for documentation)
+- **Description**: Description of what this scope tests. Ignored by the runner, kept for your notes.
 - **Example**: `"Test user authentication flow"`
 
 ## Complete Example
@@ -58,21 +70,27 @@ This document describes the JSON structure for batch scope execution.
     {
       "name": "Login Form",
       "file": "SCOPE-login.md",
+      "page": "/login",
+      "scope": "email and password validation",
       "description": "Test user authentication flow"
     },
     {
       "name": "Payment Form",
       "file": "SCOPE-payment.md",
+      "page": "/checkout",
+      "scope": "card payment form",
       "description": "Test credit card payment processing"
     },
     {
       "name": "Shipping Form",
       "file": "scopes/SCOPE-shipping.md",
+      "page": "/checkout",
       "description": "Test shipping address form"
     },
     {
       "name": "Dashboard Analytics",
       "file": "/absolute/path/to/SCOPE-dashboard.md",
+      "page": "/",
       "description": "Test analytics charts and widgets"
     }
   ]
@@ -81,7 +99,7 @@ This document describes the JSON structure for batch scope execution.
 
 ## Minimal Example
 
-Only the `file` field is required:
+Only `scopes` is required:
 
 ```json
 {
@@ -110,10 +128,13 @@ npx spectra --url http://localhost:8080 --batch scopes-batch.json
 
 The batch runner will:
 - ✅ Validate JSON syntax
-- ✅ Check that `scopes` array exists
-- ✅ Verify each scope file exists
-- ⚠️ Warn if a file is missing (continues with remaining scopes)
-- ❌ Exit if no valid scope files found
+- ✅ Reject an unknown key, so a misspelled `scope` fails the run instead of widening it
+- ✅ Check that `scopes` array exists and is not empty
+- ✅ Exit if no URL is given (no `--url`, no `SPECTRA_URL`, no `url` in the config)
+- ✅ Run each scope one after another
+- ✅ Continue with the remaining scopes when one fails
+- ✅ Report how many scopes failed at the end
+- ✅ Keep the Plan and Healing Report of every scope under `.spectra/output/scopes/<number>-<name>/`
 
 ## Notes
 
@@ -121,3 +142,4 @@ The batch runner will:
 - Absolute paths are supported
 - The `url` field in JSON is overridden by `--url` flag if provided
 - The `name` and `description` fields are informational only and don't affect execution
+- The `name` also names the folder that keeps the scope's results

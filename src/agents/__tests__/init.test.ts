@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
+import { PROJECT_DIRS } from '../../utils/layout.js';
 import { initAgents, scaffold } from '../init.js';
 
 // We need to mock TEMPLATE_DIR to point to our test fixtures
@@ -18,7 +18,6 @@ vi.mock('../../utils/logger.js', () => ({
     warn: vi.fn(),
     plain: vi.fn(),
     cyan: vi.fn(),
-    magenta: vi.fn(),
     banner: vi.fn(),
     separator: vi.fn(),
   },
@@ -109,6 +108,50 @@ describe('initAgents', () => {
     // Recreate for cleanup
     fs.mkdirSync(templateDir, { recursive: true });
   });
+
+  it('keeps a template file the user changed', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+
+    initAgents(projectRoot);
+
+    const installed = path.join(projectRoot, '.spectra', 'agents', 'planner', 'AGENT.md');
+    fs.writeFileSync(installed, '# My Planner Agent', 'utf-8');
+
+    initAgents(projectRoot);
+
+    expect(fs.readFileSync(installed, 'utf-8')).toBe('# My Planner Agent');
+  });
+
+  it('refreshes a template file the user did not change', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+
+    initAgents(projectRoot);
+
+    fs.writeFileSync(
+      path.join(templateDir, 'agents', 'planner', 'AGENT.md'),
+      '# New Planner',
+      'utf-8',
+    );
+    initAgents(projectRoot);
+
+    const installed = path.join(projectRoot, '.spectra', 'agents', 'planner', 'AGENT.md');
+    expect(fs.readFileSync(installed, 'utf-8')).toBe('# New Planner');
+  });
+
+  it('removes an installed file whose template is gone', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+
+    initAgents(projectRoot);
+
+    fs.rmSync(path.join(templateDir, 'agents', 'shared', 'config.md'));
+    initAgents(projectRoot);
+
+    const installed = path.join(projectRoot, '.spectra', 'agents', 'shared', 'config.md');
+    expect(fs.existsSync(installed)).toBe(false);
+  });
 });
 
 describe('scaffold', () => {
@@ -133,21 +176,7 @@ describe('scaffold', () => {
 
     scaffold(projectRoot);
 
-    const expectedDirs = [
-      'tests/e2e',
-      'specs',
-      'pages',
-      'fixtures',
-      '.spectra/agents/planner',
-      '.spectra/agents/generator',
-      '.spectra/agents/healer',
-      '.spectra/agents/shared',
-      '.spectra/output/plans',
-      '.spectra/output/reports',
-      '.spectra/output/test-results',
-    ];
-
-    for (const dir of expectedDirs) {
+    for (const dir of PROJECT_DIRS) {
       expect(fs.existsSync(path.join(projectRoot, dir))).toBe(true);
     }
   });

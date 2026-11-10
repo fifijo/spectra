@@ -22,7 +22,9 @@
 │   │   └── shared/           # Shared context
 │   └── output/
 │       ├── plans/            # Test plans
-│       └── reports/          # Results & healing reports
+│       ├── tests/            # The Generator's completion signal
+│       ├── reports/          # Results & healing reports
+│       └── test-results/     # Playwright artifacts
 └── playwright.config.ts
 ```
 

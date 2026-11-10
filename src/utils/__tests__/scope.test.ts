@@ -49,6 +49,31 @@ describe('createScopeContext', () => {
     expect(content).toContain('**Full URL**: http://localhost:5173/checkout');
   });
 
+  it('keeps the base path of the URL', () => {
+    const tmp = makeTmpDir();
+    tmpDirs.push(tmp);
+    const outputPath = path.join(tmp, 'scope.md');
+
+    createScopeContext(outputPath, {
+      url: 'https://staging.example.com/myapp',
+      page: '/checkout',
+    });
+
+    const content = fs.readFileSync(outputPath, 'utf-8');
+    expect(content).toContain('**Full URL**: https://staging.example.com/myapp/checkout');
+  });
+
+  it('joins URL and page without a double or missing slash', () => {
+    const tmp = makeTmpDir();
+    tmpDirs.push(tmp);
+    const outputPath = path.join(tmp, 'scope.md');
+
+    createScopeContext(outputPath, { url: 'http://localhost:5173/', page: 'checkout' });
+
+    const content = fs.readFileSync(outputPath, 'utf-8');
+    expect(content).toContain('**Full URL**: http://localhost:5173/checkout');
+  });
+
   it('includes feature focus section when scope is provided', () => {
     const tmp = makeTmpDir();
     tmpDirs.push(tmp);
@@ -75,7 +100,7 @@ describe('createScopeContext', () => {
 
     createScopeContext(outputPath, {
       url: 'http://localhost:5173',
-      scopeFile: scopeFilePath,
+      file: scopeFilePath,
     });
 
     const content = fs.readFileSync(outputPath, 'utf-8');
@@ -91,7 +116,7 @@ describe('createScopeContext', () => {
 
     createScopeContext(outputPath, {
       url: 'http://localhost:5173',
-      scopeFile: '/nonexistent/path/SCOPE.md',
+      file: '/nonexistent/path/SCOPE.md',
     });
 
     const content = fs.readFileSync(outputPath, 'utf-8');
@@ -119,7 +144,7 @@ describe('createScopeContext', () => {
       url: 'http://localhost:5173',
       page: '/settings',
       scope: 'profile editor',
-      scopeFile: scopeFilePath,
+      file: scopeFilePath,
     });
 
     const content = fs.readFileSync(outputPath, 'utf-8');

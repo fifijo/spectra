@@ -49,13 +49,6 @@ describe('logger', () => {
     expect(output).toContain('\x1b[36m');
   });
 
-  it('magenta() logs with magenta ANSI code', () => {
-    const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    logger.magenta('info');
-    const output = spy.mock.calls[0][0] as string;
-    expect(output).toContain('\x1b[35m');
-  });
-
   it('plain() logs without ANSI codes', () => {
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
     logger.plain('raw text');

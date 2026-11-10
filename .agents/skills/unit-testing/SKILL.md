@@ -46,7 +46,6 @@ pnpm run test:unit:coverage
       warn: vi.fn(),
       plain: vi.fn(),
       cyan: vi.fn(),
-      magenta: vi.fn(),
       banner: vi.fn(),
       separator: vi.fn(),
     },
