@@ -18,6 +18,7 @@ Fix the agent pipeline and clean up dead code.
 - A batch file with a misspelled key is now rejected instead of silently widening the scope
 - The batch file is validated by a parser that never exits, so the rules can be tested on their own
 - The folders of a project are named in one place, and the shared context the agents read agrees with it
+- **Breaking**: `createScopeContext` takes `file` instead of `scopeFile` for the scope file
 - Batch scopes now pass `page` and `scope` through to the run
 - `--batch` reports how many scopes failed
 - The summary counts only the files created by the current run

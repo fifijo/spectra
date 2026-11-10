@@ -39,7 +39,9 @@ node dist/bin.js --batch /tmp/batch.json
 ```
 - Should show "Batch mode: 2 scope(s)" and iterate both scopes
 - Missing batch file should error with "Batch file not found"
-- Invalid JSON should error with "Failed to parse batch file"
+- Invalid JSON should error with "Invalid batch file"
+- A misspelled key in a scope should error with "Invalid batch file" and name the key
+- Each scope's results land in `.spectra/output/scopes/<number>-<name>/`
 
 ### 4. Compiled Output Inspection
 For security-sensitive changes, inspect the compiled JS directly:

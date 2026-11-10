@@ -401,9 +401,11 @@ spectra/
 │   │       └── current-scope.md # Runtime scope (created by CLI)
 │   └── output/
 │       ├── plans/test-plan.md
+│       ├── tests/               # The Generator's completion signal
 │       ├── reports/
 │       │   ├── healing-report.md
 │       │   └── status.json      # Machine-readable status
+│       ├── scopes/              # One folder per scope in a batch
 │       └── test-results/        # Playwright test results
 ├── fixtures/
 │   └── pages.ts                 # Reusable test fixtures

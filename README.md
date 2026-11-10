@@ -531,6 +531,7 @@ spectra/
 │       │   ├── results.json
 │       │   ├── status.json      # Machine-readable status
 │       │   └── healing-report.md
+│       ├── 📂 scopes/            # One folder per scope in a batch
 │       └── 📂 test-results/      # Playwright test results
 │
 ├── 📂 .cursor/

@@ -24,8 +24,8 @@ describe('agent catalogue', () => {
     for (const agent of AGENTS) {
       const definition = template('agents', agent.name, 'AGENT.md');
       expect(definition).toContain(inOutputDir(agent.completionSignal));
-      for (const output of agent.outputs) {
-        expect(definition).toContain(inOutputDir(output));
+      for (const file of [...agent.inputs, ...agent.outputs]) {
+        expect(definition).toContain(inOutputDir(file));
       }
     }
   });
@@ -34,6 +34,14 @@ describe('agent catalogue', () => {
     const context = template('agents', 'shared', 'context.md');
     for (const signal of COMPLETION_SIGNALS) {
       expect(context).toContain(inOutputDir(signal));
+    }
+    const dirs = new Set(
+      AGENTS.flatMap((agent) => [...agent.inputs, ...agent.outputs]).map((file) =>
+        path.dirname(file),
+      ),
+    );
+    for (const dir of dirs) {
+      expect(context).toContain(inOutputDir(dir));
     }
   });
 });
