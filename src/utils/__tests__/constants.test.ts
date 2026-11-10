@@ -16,4 +16,9 @@ describe('constants', () => {
   it('DEFAULT_OUTPUT_DIR is the expected relative path', () => {
     expect(DEFAULT_OUTPUT_DIR).toBe('.spectra/output');
   });
+
+  it('package.json has a typecheck:test script pointing at tsconfig.test.json', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, 'package.json'), 'utf-8'));
+    expect(pkg.scripts['typecheck:test']).toContain('tsconfig.test.json');
+  });
 });

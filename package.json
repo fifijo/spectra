@@ -37,6 +37,7 @@
     "test:unit:watch": "vitest",
     "test:unit:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit -p tsconfig.json",
+    "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
     "clean": "rm -rf dist",
     "lint": "biome lint",
     "lint:fix": "biome lint --write",

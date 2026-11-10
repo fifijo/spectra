@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/pages';
+import { test, expect } from '../fixtures/pages.js';
 
 test.describe('Login', { tag: ['@e2e'] }, () => {
   test.beforeEach(async ({ loginPage }) => {

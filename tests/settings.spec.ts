@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/pages';
+import { test, expect } from '../fixtures/pages.js';
 
 test.describe('Settings', { tag: ['@e2e'] }, () => {
   test('tabs, profile save feedback, appearance and security controls', async ({ settingsPage }) => {

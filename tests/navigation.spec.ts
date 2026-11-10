@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/pages';
+import { test, expect } from '../fixtures/pages.js';
 
 test.describe('Sidebar navigation', { tag: ['@smoke', '@e2e'] }, () => {
   test('covers all primary routes with expected headings', async ({

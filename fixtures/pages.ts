@@ -3,16 +3,16 @@
  */
 
 import { test as base } from '@playwright/test';
-import { AppShellPage } from '../pages/AppShellPage';
-import { CheckoutPage } from '../pages/CheckoutPage';
-import { DashboardPage } from '../pages/DashboardPage';
-import { KanbanPage } from '../pages/KanbanPage';
-import { LoginPage } from '../pages/LoginPage';
-import { NotificationsPage } from '../pages/NotificationsPage';
-import { ProductsPage } from '../pages/ProductsPage';
-import { SettingsPage } from '../pages/SettingsPage';
-import { TasksPage } from '../pages/TasksPage';
-import { UsersPage } from '../pages/UsersPage';
+import { AppShellPage } from '../pages/AppShellPage.js';
+import { CheckoutPage } from '../pages/CheckoutPage.js';
+import { DashboardPage } from '../pages/DashboardPage.js';
+import { KanbanPage } from '../pages/KanbanPage.js';
+import { LoginPage } from '../pages/LoginPage.js';
+import { NotificationsPage } from '../pages/NotificationsPage.js';
+import { ProductsPage } from '../pages/ProductsPage.js';
+import { SettingsPage } from '../pages/SettingsPage.js';
+import { TasksPage } from '../pages/TasksPage.js';
+import { UsersPage } from '../pages/UsersPage.js';
 
 type PageFixtures = {
   appShellPage: AppShellPage;

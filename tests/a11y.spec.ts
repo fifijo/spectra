@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/pages';
+import { test, expect } from '../fixtures/pages.js';
 
 test.describe('Accessibility spot checks', { tag: ['@e2e'] }, () => {
   test('landmarks on dashboard and forms on login and checkout', async ({

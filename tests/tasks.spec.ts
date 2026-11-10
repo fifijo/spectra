@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/pages';
+import { test, expect } from '../fixtures/pages.js';
 
 test.describe('Tasks', { tag: ['@e2e'] }, () => {
   test('adds a task, toggles completion, filters, and deletes', async ({ tasksPage }) => {
