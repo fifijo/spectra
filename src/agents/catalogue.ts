@@ -13,11 +13,22 @@ export interface Agent {
   inputs: string[];
   /** Files the Agent writes into the run's output dir. */
   outputs: string[];
-  /** Project paths the Agent writes to or edits. */
+  /** Project paths the Agent writes to or edits. The prompt tells it to. */
   projectOutputs: string[];
+  /**
+   * Project folders where the Agent must have written a file during the run.
+   * A folder counts as done when one of the files inside it is new or changed.
+   *
+   * This is what the run checks; `projectOutputs` is only what the prompt says.
+   * A folder here ends with a slash.
+   */
+  writes: string[];
   /** The file the Agent writes when it is done. */
   completionSignal: string;
 }
+
+/** The test results the Healer reads. The Playwright config writes it. */
+export const TEST_RESULTS = 'reports/results.json';
 
 export const AGENTS: Agent[] = [
   {
@@ -27,6 +38,7 @@ export const AGENTS: Agent[] = [
     inputs: [],
     outputs: ['plans/test-plan.md'],
     projectOutputs: [],
+    writes: [],
     completionSignal: 'plans/.complete',
   },
   {
@@ -36,15 +48,17 @@ export const AGENTS: Agent[] = [
     inputs: ['plans/test-plan.md'],
     outputs: [],
     projectOutputs: ['pages/', 'tests/', 'fixtures/pages.ts'],
+    writes: ['tests/'],
     completionSignal: 'tests/.complete',
   },
   {
     name: 'healer',
     color: 'magenta',
     emoji: '🟣',
-    inputs: ['reports/results.json'],
+    inputs: [TEST_RESULTS],
     outputs: ['reports/healing-report.md', 'reports/status.json'],
     projectOutputs: ['pages/', 'tests/'],
+    writes: [],
     completionSignal: 'reports/.complete',
   },
 ];

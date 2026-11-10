@@ -6,7 +6,7 @@
     },
     "spectra": {
       "command": "npx",
-      "args": ["spectra", "--mcp", "--url", "http://localhost:5173"]
+      "args": ["spectra-test-automation", "--mcp", "--url", "http://localhost:5173"]
     }
   }
 }

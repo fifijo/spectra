@@ -6,13 +6,15 @@ import {
   COMPLETION_SIGNALS,
   OUTPUT_ARTEFACTS,
   SCOPE_CONTEXT,
+  TEST_RESULTS,
 } from './agents/catalogue.js';
 import { initAgents, scaffold } from './agents/init.js';
-import { runAgent } from './agents/runner.js';
+import { agentLogName, runAgent } from './agents/runner.js';
+import { countChanged, missingOutputs, takeSnapshot } from './agents/verify.js';
 import { serveMcp } from './mcp/server.js';
-import { parseBatchConfig } from './utils/batch.js';
+import { parseBatchConfig, type ScopeDefinition } from './utils/batch.js';
 import { DEFAULT_OUTPUT_DIR } from './utils/constants.js';
-import { detectMode } from './utils/detect-mode.js';
+import { type CliMode, detectMode } from './utils/detect-mode.js';
 import { OUTPUT_DIRS } from './utils/layout.js';
 import { logger, setLogTarget } from './utils/logger.js';
 import { createScopeContext, type Scope } from './utils/scope.js';
@@ -24,6 +26,8 @@ export interface SpectraOptions {
   file?: string;
   batch?: string;
   manual?: boolean;
+  /** The Mode to run the Agents with, by name. */
+  mode?: string;
   init?: boolean;
   mcp?: boolean;
   debug?: boolean;
@@ -32,9 +36,24 @@ export interface SpectraOptions {
 /** Delete files under the run's output dir. */
 function clean(outputDir: string, files: string[]): void {
   for (const f of files) {
-    const fp = path.join(outputDir, f);
-    if (fs.existsSync(fp)) fs.unlinkSync(fp);
+    fs.rmSync(path.join(outputDir, f), { force: true, recursive: true });
   }
+}
+
+/**
+ * The files a run starts without: the artefacts and the logs of the last run,
+ * so nothing left over can pass for work this run did.
+ */
+function cleanRun(outputDir: string): void {
+  clean(outputDir, COMPLETION_SIGNALS);
+  clean(outputDir, OUTPUT_ARTEFACTS);
+  // The test results of an earlier run: the Healer must not read them.
+  clean(outputDir, [TEST_RESULTS]);
+  // The log of the last run of each Agent.
+  clean(
+    outputDir,
+    AGENTS.map((agent) => agentLogName(agent.name)),
+  );
 }
 
 /**
@@ -48,11 +67,6 @@ function preserve(agent: Agent, outputDir: string, scopeDir: string): void {
     fs.mkdirSync(path.dirname(to), { recursive: true });
     fs.copyFileSync(from, to);
   }
-}
-
-/** The output files an Agent was supposed to write, and that are missing. */
-function missingOutputs(agent: Agent, outputDir: string): string[] {
-  return agent.outputs.filter((file) => !fs.existsSync(path.join(outputDir, file)));
 }
 
 /** The CLI flags that apply to every Scope of a batch. */
@@ -73,16 +87,27 @@ function slugify(label: string): string {
   return slug || 'scope';
 }
 
-/** List files with the given extension, recursively. */
-function listFiles(dir: string, ext: string): string[] {
-  if (!fs.existsSync(dir)) return [];
-  const out: string[] = [];
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...listFiles(full, ext));
-    else if (entry.name.endsWith(ext)) out.push(full);
+/**
+ * The Agent reads the scope file and does what it says. A file from outside
+ * the project crosses the trust boundary, so say so before the run starts.
+ */
+function warnOnUntrustedFile(cwd: string, file: string | undefined): void {
+  if (!file) return;
+  const resolved = path.resolve(cwd, file);
+  if (resolved.startsWith(path.resolve(cwd) + path.sep)) return;
+  logger.warn(`The scope file ${file} is outside the project.`);
+  logger.warn('Its text goes to an agent that can run commands on this machine.');
+  logger.warn('Only use a file you trust.');
+}
+
+/** Every scope file the run will read, once each. */
+function scopeFiles(options: SpectraOptions, scopes: ScopeDefinition[]): string[] {
+  const files = new Set<string>();
+  if (options.file) files.add(options.file);
+  for (const scope of scopes) {
+    if (scope.file) files.add(scope.file);
   }
-  return out;
+  return [...files];
 }
 
 /**
@@ -109,11 +134,17 @@ function runAsMcpServer(cwd: string, options: SpectraOptions): boolean {
   }
 
   try {
-    initAgents(cwd);
+    // The Healer runs the tests with the Playwright config, and the Generator
+    // fills the fixtures: a project that has none cannot finish a Spectrum.
+    scaffold(cwd);
   } catch (err) {
     logger.error(err instanceof Error ? err.message : String(err));
     return false;
   }
+
+  // The run starts with empty results: a file left over from an earlier run
+  // must never pass for work this run did.
+  cleanRun(outputDir);
 
   const scope: Scope = {
     url,
@@ -122,6 +153,7 @@ function runAsMcpServer(cwd: string, options: SpectraOptions): boolean {
     file: options.file,
   };
   createScopeContext(path.join(agentsDir, SCOPE_CONTEXT), scope);
+  warnOnUntrustedFile(cwd, options.file);
 
   logger.banner();
   logger.cyan('Mode: mcp');
@@ -130,7 +162,18 @@ function runAsMcpServer(cwd: string, options: SpectraOptions): boolean {
   logger.plain('do the work it describes, then call spectra_done.');
   logger.plain('');
 
-  serveMcp({ outputDir, agentsDir, agents: AGENTS, index: 0 }, process.stdin, process.stdout);
+  serveMcp(
+    {
+      outputDir,
+      agentsDir,
+      projectRoot: cwd,
+      agents: AGENTS,
+      index: 0,
+      snapshot: takeSnapshot(AGENTS, outputDir, cwd),
+    },
+    process.stdin,
+    process.stdout,
+  );
   return true;
 }
 
@@ -190,14 +233,19 @@ export async function run(options: SpectraOptions = {}): Promise<boolean> {
     logger.info(`Batch mode: ${batchConfig.scopes.length} scope(s)`);
     logger.plain('');
 
-    // The batch starts with empty results; every scope keeps its own, so a scope cannot delete the ones before it.
-    clean(path.join(cwd, DEFAULT_OUTPUT_DIR), OUTPUT_ARTEFACTS);
     // The scope folders of an earlier batch are copies, so this run starts without them.
     fs.rmSync(path.join(cwd, DEFAULT_OUTPUT_DIR, 'scopes'), { recursive: true, force: true });
+
+    const mode = prepare(cwd, options.manual, options.mode);
+    if (!mode) return false;
 
     const shared = sharedFlags(options);
     if (shared.length > 0) {
       logger.info(`Applied to every scope: ${shared.join(', ')}`);
+    }
+
+    for (const file of scopeFiles(options, batchConfig.scopes)) {
+      warnOnUntrustedFile(cwd, file);
     }
 
     let failed = 0;
@@ -215,13 +263,14 @@ export async function run(options: SpectraOptions = {}): Promise<boolean> {
           manual: options.manual,
           debug: options.debug,
         },
-        false,
+        mode,
         folder,
       );
-      results.push(path.join(DEFAULT_OUTPUT_DIR, 'scopes', folder));
       if (!ok) {
         failed += 1;
         logger.error(`Scope "${label}" failed`);
+      } else {
+        results.push(path.join(DEFAULT_OUTPUT_DIR, 'scopes', folder));
       }
     }
 
@@ -235,17 +284,40 @@ export async function run(options: SpectraOptions = {}): Promise<boolean> {
     return failed === 0;
   }
 
-  return runScope(options, true);
+  const mode = prepare(cwd, options.manual, options.mode);
+  if (!mode) return false;
+  warnOnUntrustedFile(cwd, options.file);
+  return runScope(options, mode);
+}
+
+/**
+ * Pick the Mode and refresh the agent templates, once for the whole run.
+ * Returns null when the templates cannot be installed.
+ */
+function prepare(cwd: string, manual: boolean | undefined, mode?: string): CliMode | null {
+  let detected: CliMode;
+  try {
+    detected = detectMode(manual ?? false, mode);
+  } catch (err) {
+    logger.error(err instanceof Error ? err.message : String(err));
+    return null;
+  }
+  try {
+    initAgents(cwd);
+  } catch (err) {
+    logger.error(err instanceof Error ? err.message : String(err));
+    return null;
+  }
+  return detected;
 }
 
 /**
  * Run the Agents for one Scope.
- * `freshOutputs` deletes the results of an earlier run; in a batch they are kept.
  * `resultsFolder` names the folder that keeps this Scope's results in a batch.
  */
 async function runScope(
   options: SpectraOptions,
-  freshOutputs: boolean,
+  mode: CliMode,
   resultsFolder?: string,
 ): Promise<boolean> {
   const cwd = process.cwd();
@@ -257,7 +329,6 @@ async function runScope(
     return false;
   }
 
-  const mode = detectMode(options.manual);
   const agentsDir = path.join(cwd, '.spectra', 'agents');
   const outputDir = path.join(cwd, DEFAULT_OUTPUT_DIR);
 
@@ -267,15 +338,6 @@ async function runScope(
   }
 
   logger.debug('cli', 'Ensured output directories exist');
-
-  // Always refresh the agent templates so an upgraded package ships new instructions
-  logger.debug('cli', 'Refreshing agent templates...');
-  try {
-    initAgents(cwd);
-  } catch (err) {
-    logger.error(err instanceof Error ? err.message : String(err));
-    return false;
-  }
 
   logger.banner();
   logger.cyan(`Mode: ${mode}`);
@@ -295,20 +357,21 @@ async function runScope(
   createScopeContext(path.join(agentsDir, SCOPE_CONTEXT), scope);
   logger.debug('cli', 'Scope context created');
 
-  // Clean previous outputs
+  // Every Scope starts with empty results, so a file left over from the Scope
+  // before it can never pass for work this Scope did.
   logger.debug('cli', 'Cleaning previous outputs...');
-  clean(outputDir, COMPLETION_SIGNALS);
-  if (freshOutputs) clean(outputDir, OUTPUT_ARTEFACTS);
+  cleanRun(outputDir);
   logger.debug('cli', 'Previous outputs cleaned');
 
   // The Scope keeps its own results, so the next Scope cannot overwrite them.
   const scopeDir = resultsFolder ? path.join(outputDir, 'scopes', resultsFolder) : undefined;
   if (scopeDir) fs.rmSync(scopeDir, { recursive: true, force: true });
 
+  // What the files the Agents write look like now: a file that is not new or
+  // not changed is work this run did not do.
+  const snapshot = takeSnapshot(AGENTS, outputDir, cwd);
   const pagesDir = path.join(cwd, 'pages');
   const testsDir = path.join(cwd, 'tests');
-  const pagesBefore = new Set(listFiles(pagesDir, '.ts'));
-  const testsBefore = new Set(listFiles(testsDir, '.spec.ts'));
 
   // Run agents, one after another
   let ok = true;
@@ -328,10 +391,9 @@ async function runScope(
       ok = false;
       break;
     }
-    const missing = missingOutputs(agent, outputDir);
+    const missing = missingOutputs(agent, outputDir, cwd, snapshot);
     if (missing.length > 0) {
-      const dir = path.relative(cwd, outputDir);
-      logger.error(`Agent ${agent.name} did not write ${missing.join(', ')} (relative to ${dir})`);
+      logger.error(`Agent ${agent.name} did not write ${missing.join(', ')}`);
       ok = false;
       break;
     }
@@ -342,8 +404,8 @@ async function runScope(
   // Summary
   logger.separator('blue', ok ? '✨ SPECTRUM COMPLETE' : '❌ SPECTRUM FAILED');
 
-  const pageCount = listFiles(pagesDir, '.ts').filter((f) => !pagesBefore.has(f)).length;
-  const testCount = listFiles(testsDir, '.spec.ts').filter((f) => !testsBefore.has(f)).length;
+  const pageCount = countChanged(pagesDir, snapshot, '.ts');
+  const testCount = countChanged(testsDir, snapshot, '.spec.ts');
 
   logger.plain('Generated:');
   logger.plain(`  Page Objects: ${pageCount}`);

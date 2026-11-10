@@ -61,7 +61,7 @@ export const logger = {
     out('  ─────────────────────────────────');
     out('');
   },
-  separator(color: string, label: string) {
+  separator(color: 'blue' | 'green' | 'magenta', label: string) {
     const c = color === 'blue' ? BLUE : color === 'green' ? GREEN : MAGENTA;
     out('');
     out(`${c}═══════════════════════════════════════════════════════${RESET}`);

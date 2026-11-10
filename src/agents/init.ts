@@ -76,54 +76,46 @@ export function scaffold(projectRoot: string): void {
     installTemplates(specsSource, specsDest);
   }
 
-  // Copy fixture template if not present
-  const fixtureSource = path.join(TEMPLATE_DIR, 'fixtures', 'pages.ts');
-  const fixtureDest = path.join(projectRoot, 'fixtures', 'pages.ts');
-  if (fs.existsSync(fixtureSource) && !fs.existsSync(fixtureDest)) {
-    fs.mkdirSync(path.dirname(fixtureDest), { recursive: true });
-    fs.copyFileSync(fixtureSource, fixtureDest);
-  }
-
-  // Copy the Playwright config if not present: the Healer runs the tests with it.
-  const configSource = path.join(TEMPLATE_DIR, 'config', 'playwright.config.ts');
-  const configDest = path.join(projectRoot, 'playwright.config.ts');
-  if (fs.existsSync(configSource) && !fs.existsSync(configDest)) {
-    fs.copyFileSync(configSource, configDest);
-  }
-
-  // Copy the MCP config if not present: the Agents explore with Playwright MCP.
-  const mcpSource = path.join(TEMPLATE_DIR, 'cursor', 'mcp.json');
-  const mcpDest = path.join(projectRoot, '.cursor', 'mcp.json');
-  if (fs.existsSync(mcpSource) && !fs.existsSync(mcpDest)) {
-    fs.mkdirSync(path.dirname(mcpDest), { recursive: true });
-    fs.copyFileSync(mcpSource, mcpDest);
-  }
-
-  // Copy the host MCP config if not present: it lets the model in the user's
-  // own chat or CLI drive the Spectrum, without an agent CLI.
-  const hostMcpSource = path.join(TEMPLATE_DIR, '.mcp.json');
-  const hostMcpDest = path.join(projectRoot, '.mcp.json');
-  if (fs.existsSync(hostMcpSource) && !fs.existsSync(hostMcpDest)) {
-    fs.copyFileSync(hostMcpSource, hostMcpDest);
-  }
-
-  // Copy the seed spec if not present: the gate docs ask the user to run it.
-  const seedSource = path.join(TEMPLATE_DIR, 'tests', 'seed.spec.ts');
-  const seedDest = path.join(projectRoot, 'tests', 'seed.spec.ts');
-  if (fs.existsSync(seedSource) && !fs.existsSync(seedDest)) {
-    fs.mkdirSync(path.dirname(seedDest), { recursive: true });
-    fs.copyFileSync(seedSource, seedDest);
-  }
-
-  // Copy the CI workflow if not present: it runs the generated suite in GitHub Actions.
-  const workflowSource = path.join(TEMPLATE_DIR, '.github', 'workflows', 'test.yml');
-  const workflowDest = path.join(projectRoot, '.github', 'workflows', 'test.yml');
-  if (fs.existsSync(workflowSource) && !fs.existsSync(workflowDest)) {
-    fs.mkdirSync(path.dirname(workflowDest), { recursive: true });
-    fs.copyFileSync(workflowSource, workflowDest);
-  }
+  // The fixture, the Playwright config, both MCP configs, the seed spec and the
+  // CI workflow: the project keeps its own version of each one.
+  copyIfMissing(
+    path.join(TEMPLATE_DIR, 'fixtures', 'pages.ts'),
+    path.join(projectRoot, 'fixtures', 'pages.ts'),
+  );
+  // The Healer runs the tests with the Playwright config.
+  copyIfMissing(
+    path.join(TEMPLATE_DIR, 'config', 'playwright.config.ts'),
+    path.join(projectRoot, 'playwright.config.ts'),
+  );
+  // The Agents explore with Playwright MCP.
+  copyIfMissing(
+    path.join(TEMPLATE_DIR, 'cursor', 'mcp.json'),
+    path.join(projectRoot, '.cursor', 'mcp.json'),
+  );
+  // The host MCP config lets the model in the user's own chat or CLI drive the
+  // Spectrum, without an agent CLI.
+  copyIfMissing(path.join(TEMPLATE_DIR, '.mcp.json'), path.join(projectRoot, '.mcp.json'));
+  // The seed spec: the gate docs ask the user to run it.
+  copyIfMissing(
+    path.join(TEMPLATE_DIR, 'tests', 'seed.spec.ts'),
+    path.join(projectRoot, 'tests', 'seed.spec.ts'),
+  );
+  // The CI workflow runs the generated suite in GitHub Actions.
+  copyIfMissing(
+    path.join(TEMPLATE_DIR, '.github', 'workflows', 'test.yml'),
+    path.join(projectRoot, '.github', 'workflows', 'test.yml'),
+  );
 
   logger.success('Project scaffolded successfully.');
+}
+
+/**
+ * Copy a template into the project, but never over a file that is already there.
+ */
+function copyIfMissing(from: string, to: string): void {
+  if (!fs.existsSync(from) || fs.existsSync(to)) return;
+  fs.mkdirSync(path.dirname(to), { recursive: true });
+  fs.copyFileSync(from, to);
 }
 
 /**

@@ -5,6 +5,7 @@ import { PassThrough } from 'node:stream';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { AGENTS } from '../../agents/catalogue.js';
+import { takeSnapshot } from '../../agents/verify.js';
 import { handleMcpRequest, type McpState, serveMcp } from '../server.js';
 
 function makeTmpDir(): string {
@@ -12,7 +13,7 @@ function makeTmpDir(): string {
 }
 
 /** A project with the agent templates and the output dir in place. */
-function makeProject(): { cwd: string; state: McpState } {
+function makeProject(existing: Record<string, string> = {}): { cwd: string; state: McpState } {
   const cwd = makeTmpDir();
   const agentsDir = path.join(cwd, '.spectra', 'agents');
   const outputDir = path.join(cwd, '.spectra', 'output');
@@ -31,7 +32,24 @@ function makeProject(): { cwd: string; state: McpState } {
     'utf-8',
   );
 
-  return { cwd, state: { outputDir, agentsDir, agents: AGENTS, index: 0 } };
+  // Files that were already there when the run started.
+  for (const [relative, content] of Object.entries(existing)) {
+    const full = path.join(outputDir, relative);
+    fs.mkdirSync(path.dirname(full), { recursive: true });
+    fs.writeFileSync(full, content, 'utf-8');
+  }
+
+  return {
+    cwd,
+    state: {
+      outputDir,
+      agentsDir,
+      projectRoot: cwd,
+      agents: AGENTS,
+      index: 0,
+      snapshot: takeSnapshot(AGENTS, outputDir, cwd),
+    },
+  };
 }
 
 /** The tool result as the host model sees it: the JSON text of the payload. */
@@ -169,6 +187,93 @@ describe('the MCP server', () => {
 
     expect(payload.done).toBe(true);
     expect(fs.existsSync(path.join(state.outputDir, 'reports', '.complete'))).toBe(true);
+  });
+
+  it('refuses to finish the Generator that wrote no test', () => {
+    const { cwd, state } = makeProject();
+    tmpDirs.push(cwd);
+    process.chdir(cwd);
+
+    // A scaffolded project already has these folders, but they are empty.
+    fs.mkdirSync(path.join(cwd, 'pages'), { recursive: true });
+    fs.mkdirSync(path.join(cwd, 'tests'), { recursive: true });
+
+    state.index = 1; // the Generator is running
+    const response = handleMcpRequest(
+      {
+        jsonrpc: '2.0',
+        id: 8,
+        method: 'tools/call',
+        params: { name: 'spectra_done', arguments: { agent: 'generator' } },
+      },
+      state,
+    );
+
+    expect((response?.result as { isError?: boolean }).isError).toBe(true);
+    expect(state.index).toBe(1);
+    expect(fs.existsSync(path.join(state.outputDir, 'tests', '.complete'))).toBe(false);
+  });
+
+  it('finishes the Generator that wrote a test', () => {
+    const { cwd, state } = makeProject();
+    tmpDirs.push(cwd);
+    process.chdir(cwd);
+
+    fs.mkdirSync(path.join(cwd, 'tests'), { recursive: true });
+    fs.writeFileSync(path.join(cwd, 'tests', 'login.spec.ts'), 'test', 'utf-8');
+
+    state.index = 1; // the Generator is running
+    const response = handleMcpRequest(
+      {
+        jsonrpc: '2.0',
+        id: 9,
+        method: 'tools/call',
+        params: { name: 'spectra_done', arguments: { agent: 'generator' } },
+      },
+      state,
+    );
+
+    expect((response?.result as { isError?: boolean }).isError).toBeUndefined();
+    expect(state.index).toBe(2);
+  });
+
+  it('refuses a plan that was already there when the run started', () => {
+    const { cwd, state } = makeProject({ 'plans/test-plan.md': 'OLD PLAN' });
+    tmpDirs.push(cwd);
+    process.chdir(cwd);
+
+    const response = handleMcpRequest(
+      {
+        jsonrpc: '2.0',
+        id: 10,
+        method: 'tools/call',
+        params: { name: 'spectra_done', arguments: { agent: 'planner' } },
+      },
+      state,
+    );
+
+    expect((response?.result as { isError?: boolean }).isError).toBe(true);
+    expect(state.index).toBe(0);
+  });
+
+  it('refuses to finish an Agent that is not the running one', () => {
+    const { cwd, state } = makeProject();
+    tmpDirs.push(cwd);
+    process.chdir(cwd);
+
+    // The Planner is running, the host says the Generator is done.
+    const response = handleMcpRequest(
+      {
+        jsonrpc: '2.0',
+        id: 11,
+        method: 'tools/call',
+        params: { name: 'spectra_done', arguments: { agent: 'generator' } },
+      },
+      state,
+    );
+
+    expect((response?.result as { isError?: boolean }).isError).toBe(true);
+    expect(state.index).toBe(0);
   });
 
   it('says nothing for a notification', () => {

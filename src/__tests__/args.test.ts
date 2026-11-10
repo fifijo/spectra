@@ -85,6 +85,19 @@ describe('parseCliArgs', () => {
     expect(parseCliArgs().init).toBe(true);
   });
 
+  it('parses --mode flag', () => {
+    withArgs(['--mode', 'codex']);
+    expect(parseCliArgs().mode).toBe('codex');
+  });
+
+  it('takes the mode from SPECTRA_MODE when the flag is not there', () => {
+    process.env.SPECTRA_MODE = 'gemini';
+    withArgs([]);
+
+    expect(parseCliArgs().mode).toBe('gemini');
+
+    delete process.env.SPECTRA_MODE;
+  });
   it('defaults init to false', () => {
     withArgs([]);
     expect(parseCliArgs().init).toBe(false);

@@ -9,14 +9,14 @@ Step-by-step guide to full-spectrum test automation.
 ```bash
 # 1. Install
 pnpm add -D spectra-test-automation @playwright/test
-npx spectra --init
+npx spectra-test-automation --init
 pnpm exec playwright install chromium
 
 # 2. Start your app (separate terminal)
 cd /your/app && pnpm dev
 
 # 3. Run Spectra
-npx spectra --url http://localhost:5173
+npx spectra-test-automation --url http://localhost:5173
 
 # Done! Tests are in tests/
 ```
@@ -38,7 +38,8 @@ npx spectra --url http://localhost:5173
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         YOUR INPUT                              │
-│  npx spectra --url http://localhost:5173 --scope "login form"  │
+│  npx spectra-test-automation --url http://localhost:5173        │
+│  --scope "login form"                                           │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -148,7 +149,7 @@ npx spectra --url http://localhost:5173
 pnpm add -D spectra-test-automation @playwright/test
 
 # Scaffold project structure
-npx spectra --init
+npx spectra-test-automation --init
 
 # Install Playwright browsers
 pnpm exec playwright install chromium
@@ -159,7 +160,7 @@ Creates:
 - 3 agents (Planner, Generator, Healer)
 - MCP configuration
 - Seed spec (`tests/seed.spec.ts`, created by `spectra --init`)
-- `spectra` CLI (via `npx spectra`)
+- `spectra` CLI (via `npx spectra-test-automation`)
 
 ### Option B: Install from Git
 
@@ -194,19 +195,19 @@ pnpm dev
 ### Full Spectrum (entire app)
 
 ```bash
-npx spectra --url http://localhost:5173
+npx spectra-test-automation --url http://localhost:5173
 ```
 
 ### Single Page
 
 ```bash
-npx spectra --url http://localhost:5173 --page /login
+npx spectra-test-automation --url http://localhost:5173 --page /login
 ```
 
 ### Specific Feature
 
 ```bash
-npx spectra --url http://localhost:5173 --page /checkout --scope "payment form"
+npx spectra-test-automation --url http://localhost:5173 --page /checkout --scope "payment form"
 ```
 
 ### With Scope File
@@ -214,15 +215,18 @@ npx spectra --url http://localhost:5173 --page /checkout --scope "payment form"
 ```bash
 cp docs/SCOPE-template.md SCOPE.md
 # Edit SCOPE.md
-npx spectra --url http://localhost:5173 --file SCOPE.md
+npx spectra-test-automation --url http://localhost:5173 --file SCOPE.md
 ```
+
+The text of the scope file is read by the agent, which can run commands in your
+project. Only use a file you trust.
 
 ### Multiple Scopes (Batch Mode)
 
 Run multiple scopes sequentially using a batch JSON config:
 
 ```bash
-npx spectra --batch scopes-batch.json
+npx spectra-test-automation --batch scopes-batch.json
 ```
 
 > See [BATCH-CONFIG.md](BATCH-CONFIG.md) for complete JSON schema documentation.
@@ -263,14 +267,14 @@ answers and that the page has a title.
 
 | Command | Description |
 |---------|-------------|
-| `npx spectra --init` | Scaffold project structure |
-| `npx spectra -u URL` | Full spectrum scan |
-| `npx spectra -u URL -p /page` | Single page focus |
-| `npx spectra -u URL -s "feature"` | Feature scope |
-| `npx spectra -u URL -f SCOPE.md` | Detailed scope file |
-| `npx spectra -u URL -m` | Manual Cursor mode |
-| `npx spectra -u URL --debug` | Enable debug output |
-| `npx spectra -b FILE.json` | Run scopes from JSON config |
+| `npx spectra-test-automation --init` | Scaffold project structure |
+| `npx spectra-test-automation -u URL` | Full spectrum scan |
+| `npx spectra-test-automation -u URL -p /page` | Single page focus |
+| `npx spectra-test-automation -u URL -s "feature"` | Feature scope |
+| `npx spectra-test-automation -u URL -f SCOPE.md` | Detailed scope file |
+| `npx spectra-test-automation -u URL -m` | Manual Cursor mode |
+| `npx spectra-test-automation -u URL --debug` | Enable debug output |
+| `npx spectra-test-automation -b FILE.json` | Run scopes from JSON config |
 | `npx playwright test` | Run all tests |
 | `npx playwright test tests/seed.spec.ts` | Run seed spec only (created by `spectra --init`) |
 | `npx playwright test --headed` | Run with visible browser |
@@ -295,7 +299,7 @@ answers and that the page has a title.
 
 ```bash
 # Test only payment, not shipping/cart
-npx spectra \
+npx spectra-test-automation \
   --url http://localhost:5173 \
   --page /checkout \
   --scope "credit card payment form"
@@ -305,7 +309,7 @@ npx spectra \
 
 ```bash
 # Test only password change
-npx spectra \
+npx spectra-test-automation \
   --url http://localhost:5173 \
   --page /settings \
   --scope "change password"
@@ -315,7 +319,7 @@ npx spectra \
 
 ```bash
 # Test only analytics chart
-npx spectra \
+npx spectra-test-automation \
   --url http://localhost:5173 \
   --page /dashboard \
   --scope "revenue chart"
@@ -325,7 +329,7 @@ npx spectra \
 
 ```bash
 # Use batch JSON config
-npx spectra --batch scopes-batch.json
+npx spectra-test-automation --batch scopes-batch.json
 ```
 
 > See [BATCH-CONFIG.md](BATCH-CONFIG.md) for the JSON schema and examples.
@@ -353,7 +357,7 @@ npx spectra --batch scopes-batch.json
 Use manual mode:
 
 ```bash
-npx spectra --url http://localhost:5173 --manual
+npx spectra-test-automation --url http://localhost:5173 --manual
 ```
 
 Spectra writes the prompt of each agent to `.spectra/agents/<agent>/current-prompt.md`
@@ -361,6 +365,15 @@ and waits until that agent writes its completion signal
 (`.spectra/output/plans/.complete`, `.spectra/output/tests/.complete`,
 `.spectra/output/reports/.complete`) before starting the next one.
 If the signal does not arrive within 30 minutes, the run stops with an error.
+
+### Several CLIs installed
+
+Spectra picks the first one it finds: `cursor-agent`, `claude`, `codex`,
+`opencode`, `gemini`. Name the one you want:
+
+```bash
+npx spectra-test-automation --url http://localhost:5173 --mode codex
+```
 
 ### Scope files not found in batch mode
 

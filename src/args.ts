@@ -17,6 +17,9 @@ export function printUsage(): void {
   logger.plain('  -f, --file FILE     Scope file with detailed requirements');
   logger.plain('  -b, --batch FILE    JSON file with scope definitions');
   logger.plain('  -m, --manual        Force manual mode (use IDE prompts)');
+  logger.plain(
+    '      --mode NAME     Run the agents with this CLI (cursor-agent, claude-code, codex, opencode, gemini, manual)',
+  );
   logger.plain('      --mcp           Serve the Spectrum over MCP (your chat or CLI drives it)');
   logger.plain('      --debug         Enable debug output');
   logger.plain('  -h, --help          Show this help');
@@ -28,6 +31,7 @@ export function printUsage(): void {
   logger.plain('  spectra -u http://localhost:5173 -f SCOPE.md');
   logger.plain('  spectra --batch scopes-batch.json');
   logger.plain('  spectra --mcp --url http://localhost:5173');
+  logger.plain('  spectra --url http://localhost:5173 --mode codex');
   logger.plain('');
 }
 
@@ -40,6 +44,7 @@ export function parseCliArgs(): SpectraOptions {
       file: { type: 'string', short: 'f' },
       batch: { type: 'string', short: 'b' },
       manual: { type: 'boolean', short: 'm', default: false },
+      mode: { type: 'string' },
       init: { type: 'boolean', default: false },
       mcp: { type: 'boolean', default: false },
       debug: { type: 'boolean', default: false },
@@ -64,6 +69,7 @@ export function parseCliArgs(): SpectraOptions {
     file: values.file,
     batch: values.batch,
     manual: values.manual,
+    mode: values.mode ?? process.env.SPECTRA_MODE,
     init: values.init,
     mcp: values.mcp,
     debug: values.debug,

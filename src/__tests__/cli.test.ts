@@ -4,7 +4,8 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock dependencies before importing cli
-vi.mock('../agents/runner.js', () => ({
+vi.mock('../agents/runner.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../agents/runner.js')>()),
   buildPrompt: vi.fn(() => 'mocked prompt'),
   runAgent: vi.fn(async () => {}),
 }));
@@ -22,7 +23,12 @@ vi.mock('../utils/detect-mode.js', () => ({
   detectMode: vi.fn(() => 'manual' as const),
 }));
 
-vi.mock('../utils/logger.js', () => ({
+vi.mock('../mcp/server.js', () => ({
+  serveMcp: vi.fn(),
+}));
+
+vi.mock('../utils/logger.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../utils/logger.js')>()),
   logger: {
     info: vi.fn(),
     success: vi.fn(),
@@ -41,6 +47,8 @@ import { AGENTS } from '../agents/catalogue.js';
 import { initAgents, scaffold } from '../agents/init.js';
 import { runAgent } from '../agents/runner.js';
 import { run } from '../cli.js';
+import { serveMcp } from '../mcp/server.js';
+import { detectMode } from '../utils/detect-mode.js';
 import { logger } from '../utils/logger.js';
 import { createScopeContext } from '../utils/scope.js';
 
@@ -49,14 +57,20 @@ function makeTmpDir(): string {
 }
 
 /** Make a mocked Agent write the files the catalogue says it writes. */
-function writeDeclaredOutputs(agentName: string): void {
+function writeDeclaredOutputs(agentName: string, content = 'x'): void {
   const output = path.join(process.cwd(), '.spectra', 'output');
   const agent = AGENTS.find((a) => a.name === agentName);
   if (!agent) return;
   for (const file of agent.outputs) {
     const full = path.join(output, file);
     fs.mkdirSync(path.dirname(full), { recursive: true });
-    fs.writeFileSync(full, 'x', 'utf-8');
+    fs.writeFileSync(full, content, 'utf-8');
+  }
+  // A folder the Agent must have written into.
+  for (const dir of agent.writes) {
+    const full = path.join(process.cwd(), dir, `${agent.name}.spec.ts`);
+    fs.mkdirSync(path.dirname(full), { recursive: true });
+    fs.writeFileSync(full, content, 'utf-8');
   }
 }
 
@@ -206,11 +220,8 @@ describe('run', () => {
 
     it('stops the pipeline when a later agent writes no output', async () => {
       vi.mocked(runAgent).mockImplementation(async (agent) => {
-        if (agent.name === 'planner') {
-          const output = path.join(process.cwd(), '.spectra', 'output');
-          fs.mkdirSync(path.join(output, 'plans'), { recursive: true });
-          fs.writeFileSync(path.join(output, 'plans', 'test-plan.md'), 'plan', 'utf-8');
-        }
+        if (agent.name === 'healer') return; // the Healer writes nothing
+        writeDeclaredOutputs(agent.name);
       });
 
       const ok = await run({ url: 'http://localhost:5173' });
@@ -219,6 +230,19 @@ describe('run', () => {
       // The Healer runs before the CLI can see that it wrote nothing; it is the last Agent.
       expect(runAgent).toHaveBeenCalledTimes(3);
       expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('healing-report.md'));
+    });
+
+    it('stops the pipeline when the generator writes no test', async () => {
+      vi.mocked(runAgent).mockImplementation(async (agent) => {
+        if (agent.name === 'generator') return; // the Generator writes nothing
+        writeDeclaredOutputs(agent.name);
+      });
+
+      const ok = await run({ url: 'http://localhost:5173' });
+
+      expect(ok).toBe(false);
+      expect(runAgent).toHaveBeenCalledTimes(2);
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('tests'));
     });
 
     it('passes correct colors and emojis to agents', async () => {
@@ -253,6 +277,54 @@ describe('run', () => {
       for (const dir of ['plans', 'tests', 'reports', 'test-results']) {
         expect(fs.existsSync(path.join(tmpDir, '.spectra', 'output', dir))).toBe(true);
       }
+    });
+  });
+
+  describe('a scope file from outside the project', () => {
+    it('warns that its text goes to an agent that can run commands', async () => {
+      const outside = path.join(path.dirname(tmpDir), 'outside-SCOPE.md');
+      fs.writeFileSync(outside, '# Outside', 'utf-8');
+
+      await run({ url: 'http://localhost:5173', file: outside });
+
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining(outside));
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Only use a file you trust'),
+      );
+    });
+
+    it('says nothing when the scope file is part of the project', async () => {
+      const inside = path.join(tmpDir, 'SCOPE.md');
+      fs.writeFileSync(inside, '# Inside', 'utf-8');
+
+      await run({ url: 'http://localhost:5173', file: 'SCOPE.md' });
+
+      expect(logger.warn).not.toHaveBeenCalled();
+    });
+
+    it('warns once for a batch, not once per scope', async () => {
+      const outside = path.join(path.dirname(tmpDir), 'outside-SCOPE.md');
+      fs.writeFileSync(outside, '# Outside', 'utf-8');
+      const batchPath = path.join(tmpDir, 'batch.json');
+      fs.writeFileSync(
+        batchPath,
+        JSON.stringify({
+          url: 'http://localhost:5173',
+          scopes: [
+            { name: 'A', file: outside },
+            { name: 'B', file: outside },
+          ],
+        }),
+        'utf-8',
+      );
+
+      await run({ batch: 'batch.json' });
+
+      const warnings = vi
+        .mocked(logger.warn)
+        .mock.calls.map((call) => call[0])
+        .filter((line) => line.includes('outside the project'));
+      expect(warnings).toHaveLength(1);
     });
   });
 
@@ -426,13 +498,14 @@ describe('run', () => {
       let scope = 0;
       vi.mocked(runAgent).mockImplementation(async (agent) => {
         const output = path.join(process.cwd(), '.spectra', 'output');
+        // Every scope writes its own work: the same bytes twice would look
+        // like a file nobody touched.
+        writeDeclaredOutputs(agent.name, `scope ${scope}`);
         if (agent.name === 'planner') {
           scope += 1;
-          writeDeclaredOutputs(agent.name);
           fs.writeFileSync(path.join(output, 'plans', 'test-plan.md'), `plan ${scope}`, 'utf-8');
         }
         if (agent.name === 'healer') {
-          writeDeclaredOutputs(agent.name);
           fs.writeFileSync(
             path.join(output, 'reports', 'healing-report.md'),
             `report ${scope}`,
@@ -462,6 +535,47 @@ describe('run', () => {
           'utf-8',
         ),
       ).toBe('report 2');
+    });
+
+    it('fails a scope that writes nothing instead of reusing the plan before it', async () => {
+      const batchPath = path.join(tmpDir, 'batch.json');
+      fs.writeFileSync(
+        batchPath,
+        JSON.stringify({
+          url: 'http://localhost:5173',
+          scopes: [{ name: 'A' }, { name: 'B' }],
+        }),
+        'utf-8',
+      );
+
+      let planners = 0;
+      vi.mocked(runAgent).mockImplementation(async (agent) => {
+        const output = path.join(process.cwd(), '.spectra', 'output');
+        if (agent.name === 'planner') {
+          planners += 1;
+          if (planners > 1) return; // the second Planner writes nothing
+          fs.mkdirSync(path.join(output, 'plans'), { recursive: true });
+          fs.writeFileSync(path.join(output, 'plans', 'test-plan.md'), 'plan A', 'utf-8');
+          return;
+        }
+        writeDeclaredOutputs(agent.name);
+      });
+
+      const ok = await run({ batch: 'batch.json' });
+
+      expect(ok).toBe(false);
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('test-plan.md'));
+      // Scope B must not keep the plan of scope A as its own result.
+      const scopeB = path.join(
+        tmpDir,
+        '.spectra',
+        'output',
+        'scopes',
+        '2-b',
+        'plans',
+        'test-plan.md',
+      );
+      expect(fs.existsSync(scopeB)).toBe(false);
     });
 
     it('lists where the results of every scope are kept', async () => {
@@ -533,7 +647,8 @@ describe('run', () => {
       await run({ url: 'http://localhost:5173' });
 
       expect(logger.plain).toHaveBeenCalledWith('  Page Objects: 1');
-      expect(logger.plain).toHaveBeenCalledWith('  Test files: 1');
+      // The mocked Generator writes one spec file, the test adds another.
+      expect(logger.plain).toHaveBeenCalledWith('  Test files: 2');
     });
 
     it('prints commands the consumer project actually has', async () => {
@@ -553,6 +668,55 @@ describe('run', () => {
       await run({ url: 'http://localhost:5173' });
 
       expect(initAgents).toHaveBeenCalledWith(tmpDir);
+    });
+  });
+
+  describe('the mode', () => {
+    it('runs with the mode the user asked for', async () => {
+      await run({ url: 'http://localhost:5173', mode: 'codex' });
+
+      expect(detectMode).toHaveBeenCalledWith(false, 'codex');
+    });
+
+    it('fails when the mode cannot be used', async () => {
+      vi.mocked(detectMode).mockImplementationOnce(() => {
+        throw new Error('The codex CLI is not installed.');
+      });
+
+      const ok = await run({ url: 'http://localhost:5173', mode: 'codex' });
+
+      expect(ok).toBe(false);
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining('The codex CLI is not installed.'),
+      );
+      expect(runAgent).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('--mcp mode', () => {
+    it('scaffolds the project, so the Healer has a Playwright config', async () => {
+      await run({ mcp: true, url: 'http://localhost:5173' });
+
+      expect(scaffold).toHaveBeenCalledWith(tmpDir);
+      expect(serveMcp).toHaveBeenCalled();
+    });
+
+    it('starts no agent CLI: the model in the chat plays the Agent', async () => {
+      await run({ mcp: true, url: 'http://localhost:5173' });
+
+      expect(runAgent).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('the output folder', () => {
+    it('starts without the log of the last run', async () => {
+      const log = path.join(tmpDir, '.spectra', 'output', 'planner.log');
+      fs.mkdirSync(path.dirname(log), { recursive: true });
+      fs.writeFileSync(log, 'old run', 'utf-8');
+
+      await run({ url: 'http://localhost:5173' });
+
+      expect(fs.existsSync(log)).toBe(false);
     });
   });
 });

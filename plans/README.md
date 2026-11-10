@@ -30,16 +30,16 @@ advisor.
 | 014 | `--init` scaffolds a seed spec, so the first documented command works | P1 | S | — | DONE |
 | 015 | A git install produces a package with a working `spectra` binary | P1 | S | — | TODO |
 | 016 | `--init` scaffolds a CI workflow a consumer can actually run | P2 | M | — | DONE |
-| 017 | The Generator template uses only the locators its own gate allows | P1 | M | — | TODO |
+| 017 | The Generator template uses only the locators its own gate allows | P1 | M | — | DONE |
 | 018 | The Healer template obeys the CI/Healer policy it ships with | P1 | S | — | TODO |
 | 019 | The gate documents review the Plan the Spectrum actually writes | P2 | S | — | TODO |
 | 020 | The scope file's page and exclusions reach the agents | P2 | M | — | TODO |
 | 021 | The repo's own agent-workflow skills describe the code that exists | P1 | S | — | TODO |
 | 022 | The README describes what the tool actually does | P1 | S | 016 | TODO |
 | 023 | The published programmatic API is documented | P2 | S | — | TODO |
-| 024 | One tag vocabulary, in every document that lists tags | P2 | S | — | TODO |
-| 025 | The CI/Healer policy matches the workflow it describes | P2 | S | — | TODO |
-| 026 | The Generator's own samples pass the gate they are reviewed against | P2 | M | 017 | TODO |
+| 024 | One tag vocabulary, in every document that lists tags | P2 | S | — | DONE |
+| 025 | The CI/Healer policy matches the workflow it describes | P2 | S | — | DONE |
+| 026 | The Generator's own samples pass the gate they are reviewed against | P2 | M | 017 | DONE |
 | 027 | A scaffolded project gets the examples the guides tell it to run | P2 | M | — | TODO |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) |

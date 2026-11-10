@@ -60,18 +60,25 @@ SPECTRA_BROWSERS=all pnpm test          # all browsers + mobile
 pnpm test --grep @smoke                 # only @smoke tests
 pnpm test --grep @critical              # only @critical tests
 pnpm test --grep-invert @slow           # skip @slow tests
-pnpm test --grep "@auth|@login"         # multiple tags (OR)
+pnpm test --grep "@smoke|@critical"          # multiple tags (OR)
 SPECTRA_TAGS=@smoke pnpm test           # via env var
 ```
 
 ### Available Tags
 | Tag | Purpose |
 |-----|---------|
-| `@smoke` | Quick sanity tests |
-| `@critical` | Business-critical paths |
-| `@e2e` | Full end-to-end flows |
-| `@slow` | Long-running tests |
-| `@flaky` | Known flaky tests |
+| `@smoke` | Core happy-path scenarios that run on every deploy |
+| `@critical` | Business-critical flows (payments, auth, data integrity) |
+| `@e2e` | Full end-to-end multi-step journeys |
+| `@slow` | Tests expected to take more than 10 seconds |
+| `@validation` | Tests that verify form validation errors |
+| `@empty` | Tests that verify empty state behavior |
+| `@a11y` | Tests that verify keyboard navigation and accessibility |
+| `@interaction` | Tests that verify toggle/checkbox/tab interactions |
+
+Two more tags exist for triage, added by the Healer when it cannot make a
+test pass: `@blocked` (the application is broken) and `@flaky` (the test
+is timing-dependent). The Generator never emits them.
 
 ## Playwright Configuration (`playwright.config.ts`)
 - `testDir`: `./tests`

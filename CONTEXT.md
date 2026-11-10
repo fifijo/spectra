@@ -9,11 +9,11 @@ The three-stage pipeline that turns a running application into passing Playwrigh
 _Avoid_: pipeline, flow, orchestration
 
 **Agent**:
-One of the three Spectrum stages — Planner, Generator, Healer. Each is a Markdown definition plus a prompt, run by an AI CLI tool.
+One of the three Spectrum stages — Planner, Generator, Healer. Each is a Markdown definition plus a prompt, run by an AI CLI tool, the model in an MCP host, or a person following the prompt.
 _Avoid_: stage, worker, step
 
 **Agent catalogue**:
-The one description of every Agent: its name, colour, emoji, the files it reads and writes, and its completion signal. Everything the CLI tells an Agent comes from here.
+The one description of every Agent: its name, colour, emoji, the files it reads and writes, and its completion signal. Everything the CLI tells an Agent comes from here. It also says what the run verifies: the files in `outputs`, and at least one written file in each folder in `writes`. The paths in `projectOutputs` are only what the prompt asks for.
 _Avoid_: agent table, registry, manifest, spec
 
 **Scope**:
@@ -25,7 +25,7 @@ One entry of a Batch file: what a Scope is pointed at, plus a name and notes. It
 _Avoid_: scope options, batch scope, scope config
 
 **Scope results**:
-The Plan and the Healing Report one Scope produced, kept under `.spectra/output/scopes/<number>-<name>/` so the next Scope cannot overwrite them.
+The Plan, the Healing Report and `status.json` one Scope produced, kept under `.spectra/output/scopes/<number>-<name>/` so the next Scope cannot overwrite them.
 _Avoid_: scope output, artefacts, run results
 
 **Feature focus**:
@@ -40,6 +40,10 @@ _Avoid_: scope batch, multi-scope, sweep
 Which CLI tool runs the Agents — `cursor-agent`, `claude-code`, `codex`,
 `opencode`, `gemini`, or `manual`.
 _Avoid_: runner, backend, provider
+
+**Native mode**:
+The operating mode where `--mcp` serves the Spectrum over MCP and the model in the user's chat or CLI plays the Agents.
+_Avoid_: server mode
 
 **Completion signal**:
 The file an Agent writes to declare it has finished its work — `plans/.complete`, `tests/.complete`, `reports/.complete`. A run starts the next Agent only after the current one is done: in manual mode on the completion signal, in automated mode on the Agent's exit.

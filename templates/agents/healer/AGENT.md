@@ -125,5 +125,12 @@ while (failing_tests > 0 && attempts < MAX_ATTEMPTS):
 MAX_ATTEMPTS = 3 per test
 
 ## Completion Signal
-When all tests pass or max attempts reached:
-Create file: `.spectra/output/reports/.complete`
+When all tests pass or max attempts reached, write all three files:
+
+- `.spectra/output/reports/healing-report.md` — the report. Write it even
+  when every test passed: say what ran and that nothing had to be healed.
+- `.spectra/output/reports/status.json` — the machine-readable status.
+- `.spectra/output/reports/.complete` — the completion signal, written last.
+
+A run that did not write the report and the status is not done: the Spectrum
+stops at the Healer.

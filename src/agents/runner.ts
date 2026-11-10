@@ -5,6 +5,7 @@ import path from 'node:path';
 import type { CliMode } from '../utils/detect-mode.js';
 import { logger } from '../utils/logger.js';
 import { type Agent, SCOPE_CONTEXT } from './catalogue.js';
+import { projectPath } from './verify.js';
 
 export interface RunContext {
   mode: CliMode;
@@ -19,6 +20,11 @@ const POLL_INTERVAL_MS = 500;
 /** How long manual mode waits for the completion signal before it gives up. */
 const MANUAL_TIMEOUT_MS = 30 * 60 * 1000;
 
+/** The file name of the log of an Agent's CLI run. */
+export function agentLogName(name: string): string {
+  return `${name}.log`;
+}
+
 /**
  * Run an agent CLI and resolve when it exits.
  * The output pipes are always drained: an unread pipe fills up and blocks the agent forever.
@@ -32,7 +38,7 @@ function runAgentCli(
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     fs.mkdirSync(outputDir, { recursive: true });
-    const logPath = path.join(outputDir, `${name}.log`);
+    const logPath = path.join(outputDir, agentLogName(name));
     const logFd = fs.openSync(logPath, 'w');
     let logClosed = false;
     const closeLog = (): void => {
@@ -98,11 +104,6 @@ function waitForCompletion(completionPath: string, timeoutMs = MANUAL_TIMEOUT_MS
   });
 }
 
-/** The path as the Agent sees it: relative to the project root it runs in. */
-function projectPath(target: string): string {
-  return path.relative(process.cwd(), target);
-}
-
 /**
  * Build the task prompt of an Agent from its catalogue entry.
  * Every path in it comes from the catalogue, so the Agents never disagree about a file.
@@ -142,6 +143,10 @@ export async function runAgent(agent: Agent, ctx: RunContext): Promise<void> {
     logger.prompt(agent.name, prompt);
   }
 
+  // shortcut: the agent CLI runs with full permission on this machine, so a
+  // scope file from outside the project can steer it. Give the agent CLI an
+  // allow-list of tools when yours supports one, and run Spectra only in a
+  // project you trust.
   switch (mode) {
     case 'cursor-agent':
       await runAgentCli(

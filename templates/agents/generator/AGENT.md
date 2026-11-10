@@ -109,18 +109,20 @@ test.describe('[Feature]', { tag: ['@e2e'] }, () => {
 
 ### Step 6: Required Test Patterns (MUST Generate)
 
-For EACH page in the plan, you MUST generate these test patterns:
+For EACH page in the plan, you MUST generate these test patterns.
+
+Every sample below follows the gate in `specs/GENERATOR-GATE.md`: only
+`getByRole`, `getByLabel`, `getByTestId` and `getByText`, no fixed waits, and
+one assertion on what the user can see. Replace the placeholders with what the
+plan recorded: the exact messages, the exact labels, the test ids.
 
 #### A. Empty State Test (Required)
 ```typescript
 test.describe('[Feature] empty state', { tag: ['@empty'] }, () => {
-  test('shows empty state when no data', async ({ page }) => {
+  test('shows the empty state when there is no data', async ({ page }) => {
     await page.goto('[page-url]');
-    // Look for any empty state message (use text patterns from the plan)
-    const emptyPatterns = ['no items', 'no results', 'empty', 'nothing here', 'no data'];
-    const emptyLocator = page.locator(emptyPatterns.map(p => `text="${p}"`).join(', '));
-    // At minimum, check the page loads without crashing
-    await expect(page).toHaveURL(/[page-url]/);
+    // The message the user reads when the list is empty.
+    await expect(page.getByText('[the empty state message from the plan]')).toBeVisible();
   });
 });
 ```
@@ -128,23 +130,18 @@ test.describe('[Feature] empty state', { tag: ['@empty'] }, () => {
 #### B. Form Validation Tests (Required for each form)
 ```typescript
 test.describe('[Feature] form validation', { tag: ['@validation'] }, () => {
-  test('shows validation error on empty submit', async ({ page }) => {
+  test('shows the validation error on an empty submit', async ({ page }) => {
     await page.goto('[form-page-url]');
-    // Find and click submit button
-    const submitBtn = page.getByRole('button', { name: /submit|save|send|create/i });
-    await submitBtn.click();
-    // Look for validation messages or aria-invalid fields
-    const errorLocator = page.locator('[aria-invalid="true"], .error, .field-error, text=/error|required|invalid/i');
-    await expect(errorLocator.first()).toBeVisible({ timeout: 3000 });
+    await page.getByRole('button', { name: /submit|save|send|create/i }).click();
+    // The error message the user reads, from the plan.
+    await expect(page.getByText('[the exact error message from the plan]')).toBeVisible();
   });
 
-  test('validates email format', async ({ page }) => {
+  test('rejects an invalid email', async ({ page }) => {
     await page.goto('[form-page-url]');
-    const emailInput = page.getByLabel(/email/i);
-    await emailInput.fill('notanemail');
+    await page.getByLabel(/email/i).fill('notanemail');
     await page.getByRole('button', { name: /submit|save|send/i }).click();
-    // Look for email validation error (use exact message from plan if available)
-    await expect(page.locator('text=/valid email|invalid email|email format|not valid/i')).toBeVisible({ timeout: 3000 });
+    await expect(page.getByText('[the exact email error from the plan]')).toBeVisible();
   });
 });
 ```
@@ -152,12 +149,14 @@ test.describe('[Feature] form validation', { tag: ['@validation'] }, () => {
 #### C. Toggle/Interaction Tests (Required when toggles exist)
 ```typescript
 test.describe('[Feature] interaction', { tag: ['@interaction'] }, () => {
-  test('checkbox toggles state', async ({ page }) => {
-    await page.goto('[page-with-checkbox]');
-    const checkbox = page.getByRole('checkbox').first();
-    const wasChecked = await checkbox.isChecked();
-    await checkbox.click();
-    await expect(checkbox).toBeChecked({ checked: !wasChecked });
+  test('the switch changes the setting it controls', async ({ page }) => {
+    await page.goto('[page-with-toggle]');
+    const toggle = page.getByRole('switch');
+    const wasChecked = await toggle.isChecked();
+    await toggle.click();
+    await expect(toggle).toBeChecked({ checked: !wasChecked });
+    // When the toggle changes something the user sees, assert that too.
+    await expect(page.getByText('[what the user sees change]')).toBeVisible();
   });
 });
 ```
@@ -165,12 +164,14 @@ test.describe('[Feature] interaction', { tag: ['@interaction'] }, () => {
 #### D. Loading/Async State Tests (Required when async operations exist)
 ```typescript
 test.describe('[Feature] loading state', { tag: ['@e2e'] }, () => {
-  test('button disables during submit', async ({ page }) => {
+  test('shows the loading state and then the result', async ({ page }) => {
     await page.goto('[form-page]');
     const submitBtn = page.getByRole('button', { name: /submit|save|send/i });
     await submitBtn.click();
-    // Button should be disabled or show loading state during processing
-    await expect(submitBtn).toBeDisabled();
+    // The label the button carries while the request runs.
+    await expect(submitBtn).toHaveText(/signing in|loading|processing|submitting/i);
+    // And the outcome that follows it.
+    await expect(page.getByText('[the result the user sees]')).toBeVisible();
   });
 });
 ```
@@ -178,17 +179,15 @@ test.describe('[Feature] loading state', { tag: ['@e2e'] }, () => {
 #### E. Confirmation/Destructive Action Tests (Required when delete actions exist)
 ```typescript
 test.describe('[Feature] destructive action', { tag: ['@critical'] }, () => {
-  test('delete requires confirmation, cancel preserves data', async ({ page }) => {
+  test('delete asks first, and cancel keeps the item', async ({ page }) => {
     await page.goto('[page-with-delete]');
-    const itemCountBefore = await page.locator('[data-testid*="item"]').count();
-    const deleteBtn = page.getByRole('button', { name: /delete|remove/i }).first();
-    await deleteBtn.click();
-    // Check if dialog appears
-    const dialog = page.getByRole('dialog');
-    if (await dialog.isVisible()) {
-      await page.getByRole('button', { name: /cancel/i }).click();
-      await expect(page.locator('[data-testid*="item"]')).toHaveCount(itemCountBefore);
-    }
+    const items = page.getByTestId('[the item test id from the plan]');
+    const countBefore = await items.count();
+    await page.getByRole('button', { name: /delete|remove/i }).first().click();
+    // The confirmation the user has to answer.
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.getByRole('dialog').getByRole('button', { name: /cancel/i }).click();
+    await expect(items).toHaveCount(countBefore);
   });
 });
 ```
@@ -196,17 +195,15 @@ test.describe('[Feature] destructive action', { tag: ['@critical'] }, () => {
 #### F. Date/Time Picker Tests (When component exists)
 ```typescript
 test.describe('[Feature] date picker', { tag: ['@e2e'] }, () => {
-  test('date picker opens, selects date, closes', async ({ page }) => {
+  test('date picker opens, selects a date, closes', async ({ page }) => {
     await page.goto('[page-with-datepicker]');
-    const dateInput = page.locator('input[type="date"], [aria-label*="date" i]').first();
+    const dateInput = page.getByLabel(/date/i).first();
     await dateInput.click();
-    // If calendar popup appears, select a date
-    const calendar = page.locator('.calendar, [role="dialog"], [aria-label*="calendar" i]');
-    if (await calendar.isVisible({ timeout: 2000 })) {
-      const day = page.locator('button:not([disabled])').filter({ hasText: /1[5-9]/ }).first();
-      await day.click();
-    }
-    await expect(dateInput).not.toBeEmpty();
+    const calendar = page.getByRole('dialog');
+    await expect(calendar).toBeVisible();
+    await calendar.getByRole('button', { name: /1[5-9]/ }).first().click();
+    // The chosen date is in the field.
+    await expect(dateInput).toHaveValue(/\d/);
   });
 });
 ```
@@ -214,15 +211,11 @@ test.describe('[Feature] date picker', { tag: ['@e2e'] }, () => {
 #### G. File Upload Tests (When component exists)
 ```typescript
 test.describe('[Feature] file upload', { tag: ['@e2e'] }, () => {
-  test('file upload shows error for invalid type', async ({ page }) => {
+  test('file upload rejects a file of the wrong type', async ({ page }) => {
     await page.goto('[page-with-upload]');
-    const uploadInput = page.locator('input[type="file"]');
-    if (await uploadInput.isVisible()) {
-      // Create a fake file and try to upload
-      await uploadInput.setInputFiles({ name: 'test.exe', mimeType: 'application/x-msdownload' });
-      // Check for error message
-      await expect(page.locator('text=/invalid|type.*not supported|not allowed/i')).toBeVisible({ timeout: 3000 });
-    }
+    const uploadInput = page.getByLabel(/file|upload/i).first();
+    await uploadInput.setInputFiles({ name: 'test.exe', mimeType: 'application/x-msdownload' });
+    await expect(page.getByText('[the message the user reads]')).toBeVisible();
   });
 });
 ```
@@ -230,17 +223,15 @@ test.describe('[Feature] file upload', { tag: ['@e2e'] }, () => {
 #### H. Autocomplete Tests (When component exists)
 ```typescript
 test.describe('[Feature] autocomplete', { tag: ['@e2e'] }, () => {
-  test('autocomplete shows suggestions as user types', async ({ page }) => {
+  test('autocomplete suggests a value and fills the field', async ({ page }) => {
     await page.goto('[page-with-autocomplete]');
-    const input = page.getByRole('combobox, textbox').filter({ has: page.locator('input') }).first();
+    const input = page.getByRole('combobox');
     await input.fill('ab');
-    // Wait for suggestions dropdown
-    const suggestions = page.locator('[role="option"], [role="listbox"] li, .suggestions li');
-    await expect(suggestions.first()).toBeVisible({ timeout: 3000 });
-    // Select first suggestion
-    await suggestions.first().click();
-    // Verify input was filled
-    await expect(input).not.toBeEmpty();
+    const suggestion = page.getByRole('option').first();
+    await expect(suggestion).toBeVisible();
+    await suggestion.click();
+    // The field carries the suggestion now.
+    await expect(input).toHaveValue(/ab/);
   });
 });
 ```
@@ -250,17 +241,11 @@ test.describe('[Feature] autocomplete', { tag: ['@e2e'] }, () => {
 test.describe('[Feature] infinite scroll', { tag: ['@e2e'] }, () => {
   test('infinite scroll loads more items', async ({ page }) => {
     await page.goto('[page-with-infinite-scroll]');
-    const loadMore = page.getByRole('button', { name: /load more/i });
-    const itemsBefore = await page.locator('[data-testid*="item"], .item, li').count();
-    if (await loadMore.isVisible()) {
-      await loadMore.click();
-    }
-    // Or try scrolling
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    const items = page.getByTestId('[the item test id from the plan]');
+    const countBefore = await items.count();
+    await page.getByRole('button', { name: /load more/i }).click();
     // Wait for the count to grow - never pause for a fixed time
-    await expect
-      .poll(async () => page.locator('[data-testid*="item"], .item, li').count())
-      .toBeGreaterThan(itemsBefore);
+    await expect.poll(async () => items.count()).toBeGreaterThan(countBefore);
   });
 });
 ```
@@ -268,15 +253,13 @@ test.describe('[Feature] infinite scroll', { tag: ['@e2e'] }, () => {
 #### J. Toast Notification Tests (When component exists)
 ```typescript
 test.describe('[Feature] toast notification', { tag: ['@e2e'] }, () => {
-  test('toast appears and auto-dismisses', async ({ page }) => {
+  test('the toast appears and then disappears', async ({ page }) => {
     await page.goto('[page-with-toast]');
-    // Trigger action that shows toast (if known)
-    // Otherwise just verify toast container exists
-    const toast = page.locator('.toast, [role="alert"], .notification');
-    // If no way to trigger, just check container exists
-    if (await toast.count() > 0) {
-      await expect(toast.first()).toBeVisible({ timeout: 2000 });
-    }
+    await page.getByRole('button', { name: /[the action that shows the toast]/i }).click();
+    const toast = page.getByRole('alert');
+    await expect(toast).toBeVisible();
+    // The toast goes away on its own.
+    await expect(toast).toBeHidden();
   });
 });
 ```
@@ -284,17 +267,15 @@ test.describe('[Feature] toast notification', { tag: ['@e2e'] }, () => {
 #### K. Keyboard Navigation Tests (Recommended for all pages)
 ```typescript
 test.describe('[Feature] keyboard navigation', { tag: ['@a11y'] }, () => {
-  test('keyboard navigation works through interactive elements', async ({ page }) => {
+  test('the form can be filled and sent with the keyboard alone', async ({ page }) => {
     await page.goto('[page-url]');
-    // Get all interactive elements
-    const interactive = page.locator('button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])');
-    const firstEl = interactive.first();
-    await firstEl.focus();
-    // Press Tab repeatedly
+    await page.getByLabel(/email/i).focus();
+    await page.keyboard.type('demo@example.com');
     await page.keyboard.press('Tab');
-    // Verify focus moved (focused element should be different or last tab was trapped)
-    const focusedEl = page.locator(':focus');
-    await expect(focusedEl).toBeVisible();
+    await page.keyboard.type('password123');
+    await page.keyboard.press('Enter');
+    // The same result a mouse click gives.
+    await expect(page.getByText('[the result the user sees]')).toBeVisible();
   });
 });
 ```
@@ -302,18 +283,13 @@ test.describe('[Feature] keyboard navigation', { tag: ['@a11y'] }, () => {
 #### L. Password Strength Tests (When component exists)
 ```typescript
 test.describe('[Feature] password strength', { tag: ['@e2e'] }, () => {
-  test('password strength indicator updates as user types', async ({ page }) => {
+  test('the strength indicator follows the password', async ({ page }) => {
     await page.goto('[page-with-password-input]');
-    const passwordInput = page.locator('input[type="password"]').first();
+    const passwordInput = page.getByLabel(/password/i);
     await passwordInput.fill('weak');
-    // Check for strength indicator
-    const strength = page.locator('[class*="strength"], .password-strength, [aria-label*="strength" i]');
-    if (await strength.isVisible()) {
-      await expect(strength).toBeVisible();
-    }
-    // Type stronger password
+    await expect(page.getByText('[the weak label from the plan]')).toBeVisible();
     await passwordInput.fill('VeryStrongP@ssw0rd!');
-    await expect(strength).toBeVisible();
+    await expect(page.getByText('[the strong label from the plan]')).toBeVisible();
   });
 });
 ```
@@ -324,7 +300,8 @@ test.describe('[Feature] password strength', { tag: ['@e2e'] }, () => {
 3. `page.getByTestId()` - For custom test IDs
 4. `page.getByText()` - For unique text content
 
-NEVER use: CSS selectors, XPath, or brittle locators
+NEVER use: CSS selectors, XPath, or brittle locators. A `page.locator()` call
+with a CSS selector is a CSS selector: use `getByTestId` instead.
 
 ## Test Tags (REQUIRED)
 
@@ -347,11 +324,15 @@ test.describe('Checkout', { tag: ['@e2e', '@critical'] }, () => {
 | `@a11y` | Tests that verify keyboard navigation and accessibility |
 | `@interaction` | Tests that verify toggle/checkbox/tab interactions |
 
+This is the one vocabulary. `specs/GENERATOR-GATE.md`, `README.md` and
+`docs/QUICK-REFERENCE.md` list the same tags.
+
 ## Review Rules
 
 The output of this Agent is reviewed against `specs/GENERATOR-GATE.md`:
 no hard-coded waits, semantic locators only, a tag on every test, and at
-least one assertion that checks a business-visible outcome.
+least one assertion that checks a business-visible outcome. The samples in
+Step 6 follow those rules: copy their shape.
 
 ## Completion Signal
 When done, create file: `.spectra/output/tests/.complete`

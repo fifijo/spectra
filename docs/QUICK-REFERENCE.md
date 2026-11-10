@@ -14,7 +14,7 @@
 
 ```bash
 pnpm add -D spectra-test-automation @playwright/test
-npx spectra --init
+npx spectra-test-automation --init
 pnpm exec playwright install chromium
 ```
 
@@ -39,25 +39,25 @@ pnpm run build
 
 ```bash
 # Full spectrum scan
-npx spectra --url http://localhost:5173
+npx spectra-test-automation --url http://localhost:5173
 
 # Single page
-npx spectra -u http://localhost:5173 -p /login
+npx spectra-test-automation -u http://localhost:5173 -p /login
 
 # Feature scope
-npx spectra -u http://localhost:5173 -p /checkout -s "payment form"
+npx spectra-test-automation -u http://localhost:5173 -p /checkout -s "payment form"
 
 # Scope file
-npx spectra -u http://localhost:5173 -f SCOPE.md
+npx spectra-test-automation -u http://localhost:5173 -f SCOPE.md
 
 # Manual mode
-npx spectra -u http://localhost:5173 -m
+npx spectra-test-automation -u http://localhost:5173 -m
 
 # Batch mode - multiple scopes from JSON config
-npx spectra -b scopes-batch.json
+npx spectra-test-automation -b scopes-batch.json
 
 # Debug mode
-npx spectra -u http://localhost:5173 --debug
+npx spectra-test-automation -u http://localhost:5173 --debug
 ```
 
 ---
@@ -69,9 +69,11 @@ npx spectra -u http://localhost:5173 --debug
 | `--url` | `-u` | Target URL (required) |
 | `--page` | `-p` | Specific page |
 | `--scope` | `-s` | Feature focus |
-| `--file` | `-f` | Scope file |
+| `--file` | `-f` | Scope file (its text goes to the agent — use a file you trust) |
 | `--batch` | `-b` | JSON config file |
 | `--manual` | `-m` | Manual mode |
+| `--mode` | | Run the agents with this CLI (cursor-agent, claude-code, codex, opencode, gemini, manual) |
+| `--mcp` | | Serve the Spectrum over MCP (your chat or CLI drives it) |
 | `--init` | | Scaffold project structure |
 | `--debug` | | Enable debug output |
 | `--help` | `-h` | Show help |
@@ -106,7 +108,7 @@ SPECTRA_BROWSERS=all npx playwright test   # All browsers + mobile
 npx playwright test --grep @smoke          # Only @smoke tests
 npx playwright test --grep @critical       # Only @critical tests
 npx playwright test --grep-invert @slow    # Skip @slow tests
-npx playwright test --grep "@auth|@login"  # Multiple tags (OR)
+npx playwright test --grep "@smoke|@critical" # Multiple tags (OR)
 SPECTRA_TAGS=@smoke npx playwright test    # Via env var
 ```
 
@@ -158,6 +160,7 @@ package.json                # npm package definition
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `SPECTRA_URL` | Base URL for tests | (none — required) |
+| `SPECTRA_MODE` | CLI the agents run with | (the first one found) |
 | `SPECTRA_BROWSERS` | Browsers to test | `chromium` |
 | `SPECTRA_TAGS` | Filter by tags | (all tests) |
 | `SPECTRA_DEBUG` | Enable debug output | (unset) |
@@ -177,11 +180,18 @@ Use tags to organize and filter tests:
 
 | Tag | Use For |
 |-----|---------|
-| `@smoke` | Quick sanity tests |
-| `@critical` | Business-critical paths |
-| `@e2e` | Full end-to-end flows |
-| `@slow` | Long-running tests |
-| `@flaky` | Known flaky tests |
+| `@smoke` | Core happy-path scenarios that run on every deploy |
+| `@critical` | Business-critical flows (payments, auth, data integrity) |
+| `@e2e` | Full end-to-end multi-step journeys |
+| `@slow` | Tests expected to take more than 10 seconds |
+| `@validation` | Tests that verify form validation errors |
+| `@empty` | Tests that verify empty state behavior |
+| `@a11y` | Tests that verify keyboard navigation and accessibility |
+| `@interaction` | Tests that verify toggle/checkbox/tab interactions |
+
+Two more tags exist for triage, added by the Healer when it cannot make a
+test pass: `@blocked` (the application is broken) and `@flaky` (the test
+is timing-dependent). The Generator never emits them.
 
 ---
 
@@ -193,6 +203,7 @@ Use tags to organize and filter tests:
 | Browser not opening | `pnpm exec playwright install chromium` |
 | Tests failing | Check healing report |
 | No CLI | Use `--manual` mode |
+| The wrong CLI was picked | Name it: `--mode codex` |
 | Scope files not found | Check file paths in batch JSON config |
 | Invalid URL | Ensure URL starts with `http://` or `https://` |
 

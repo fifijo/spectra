@@ -12,6 +12,16 @@ function shouldStartLocalWebServer(url: string): boolean {
   }
 }
 
+/** The port the target URL points at, so the local server starts on that port. */
+function portOf(url: string): number {
+  try {
+    const { port } = new URL(url);
+    return Number(port) || 5173;
+  } catch {
+    return 5173;
+  }
+}
+
 /** SPECTRA_BROWSERS: comma separated list of chromium, firefox, webkit, mobile or all */
 function buildProjects(): Project[] {
   const requested = (process.env.SPECTRA_BROWSERS || 'chromium')
@@ -61,7 +71,9 @@ export default defineConfig({
   ...(shouldStartLocalWebServer(baseURL)
     ? {
         webServer: {
-          command: 'pnpm run dev',
+          // --strictPort: a busy port has to fail the run, not move the app
+          // to another port where the tests would not find it.
+          command: `pnpm exec vite --port ${portOf(baseURL)} --strictPort`,
           cwd: './dummy-test-app',
           url: baseURL,
           reuseExistingServer: !process.env.CI,

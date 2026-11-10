@@ -18,13 +18,13 @@
 Spectra uses AI agents to explore your app, generate Playwright tests, and automatically fix failures — all without manual intervention.
 
 [Quick Start](#-quick-start) •
-[How It Works](#-the-spectrum) •
+[How It Works](#-how-it-works) •
 [Examples](#-examples) •
 [Documentation](#-documentation)
 
 <br />
 
-<img src="assets/demo-animated.svg" alt="Demo" width="800" />
+<img src="assets/spectra-demo.gif" alt="Spectra demo" width="800" />
 
 </div>
 
@@ -63,7 +63,7 @@ When tests fail, the Healer agent:
 - Inspects current UI state
 - Identifies what changed
 - Automatically fixes locators
-- Re-runs until passing
+- Re-runs up to three times per test
 
 </td>
 <td width="50%">
@@ -77,67 +77,6 @@ Generates clean, maintainable code:
 </td>
 </tr>
 </table>
-
----
-
-## 🌈 The Spectrum
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                                                                             │
-│                            PLAYWRIGHT ENGINE                                │
-│   ┌─────────────────────────────┐    ┌─────────────────────────────────┐   │
-│   │   Chrome DevTools Protocol  │    │  Browser Automation & Execution │   │
-│   └─────────────────────────────┘    └─────────────────────────────────┘   │
-│                                              ▲                              │
-└──────────────────────────────────────────────┼──────────────────────────────┘
-                                               │ Runs Tests
-┌──────────────────────────────────────────────┼──────────────────────────────┐
-│                                 LLM LAYER    │                              │
-│  ┌───────────────────┐ ┌─────────────────┐ ┌─┴───────────────────┐         │
-│  │ Interprets Results│ │ Understands DOM │ │ Generates Structured│         │
-│  │ & Suggests Fixes  │ │ & Routes        │ │ Commands            │         │
-│  └───────────────────┘ └─────────────────┘ └─────────────────────┘         │
-└─────────────┬───────────────────────────────────────────┬───────────────────┘
-              │                                           │
-              │ Executes via MCP                          │ Sends commands
-              ▼                                           ▼
-┌─────────────────────────┐              ┌────────────────────────────────────┐
-│  MODEL CONTEXT PROTOCOL │              │            DEVELOPER               │
-│  ┌───────────────────┐  │              │  ┌────────────────────────────┐   │
-│  │ Structured Command│  │              │  │  Natural Language Prompt   │   │
-│  │ Interface         │  │              │  │  or Scope Definition       │   │
-│  └───────────────────┘  │              │  └────────────────────────────┘   │
-└─────────────────────────┘              └──────────────┬─────────────────────┘
-                                                        │
-                    ┌───────────────────────────────────┘
-                    ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              SPECTRA AGENTS                                 │
-│                                                                             │
-│  ┌───────────────────────────────────────────────────────────────────────┐ │
-│  │  🟣 HEALER                                                             │ │
-│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────┐   │ │
-│  │  │  Applies Fixes  │  │  Executes Tests │  │  Detects Failures   │   │ │
-│  │  └─────────────────┘  └─────────────────┘  └─────────────────────┘   │ │
-│  └───────────────────────────────────────────────────────────────────────┘ │
-│                                    ▲                                        │
-│  ┌─────────────────────────────────┴─────────────────────────────────────┐ │
-│  │  🔵 PLANNER                                                            │ │
-│  │  ┌─────────────────────────┐  ┌─────────────────────────────────┐    │ │
-│  │  │     Explores App        │  │    Generates Markdown Plan      │    │ │
-│  │  └─────────────────────────┘  └─────────────────────────────────┘    │ │
-│  └───────────────────────────────────────────────────────────────────────┘ │
-│                                    │                                        │
-│  ┌─────────────────────────────────▼─────────────────────────────────────┐ │
-│  │  🟢 GENERATOR                                                          │ │
-│  │  ┌─────────────────────────┐  ┌─────────────────────────────────┐    │ │
-│  │  │      Reads Plan         │  │   Generates Playwright Tests    │    │ │
-│  │  └─────────────────────────┘  └─────────────────────────────────┘    │ │
-│  └───────────────────────────────────────────────────────────────────────┘ │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
 
 ---
 
@@ -161,7 +100,7 @@ pnpm add -D spectra-test-automation @playwright/test
 
 # Scaffold project structure
 # (creates playwright.config.ts, .cursor/mcp.json, specs/ gate docs, pages/, tests/, fixtures/)
-npx spectra --init
+npx spectra-test-automation --init
 
 # Install Playwright browsers
 pnpm exec playwright install chromium
@@ -193,7 +132,7 @@ cd /path/to/your/app && pnpm dev
 npx playwright test tests/seed.spec.ts  # scaffolded by --init
 
 # Run Spectra
-npx spectra --url http://localhost:5173
+npx spectra-test-automation --url http://localhost:5173
 ```
 
 `spectra --init` creates `tests/seed.spec.ts` — a generic spec that checks that
@@ -213,16 +152,16 @@ That's it! Check the `tests/` folder for your generated tests.
 
 Explores your application using Playwright MCP, documenting pages, elements, and user flows.
 
-**Output:** `test-plan.md`
+**Output:** `.spectra/output/plans/test-plan.md`
 
 </td>
 <td align="center" width="33%">
 
 ### 🟢 Generator
 
-Reads the test plan and generates Page Object classes and test files.
+Reads the Plan and generates Page Object classes and test files.
 
-**Output:** `pages/*.ts`, `tests/*.spec.ts`
+**Output:** `pages/*.ts`, `tests/*.spec.ts`, `fixtures/pages.ts`
 
 </td>
 <td align="center" width="33%">
@@ -231,7 +170,7 @@ Reads the test plan and generates Page Object classes and test files.
 
 Runs tests, detects failures, inspects UI, and automatically fixes broken locators.
 
-**Output:** Passing tests ✅
+**Output:** `.spectra/output/reports/healing-report.md`, `.spectra/output/reports/status.json`
 
 </td>
 </tr>
@@ -258,10 +197,10 @@ flowchart LR
 
 ## 💡 Examples
 
-### Example 1: Full Spectrum Scan
+### Full Spectrum Scan
 
 ```bash
-npx spectra --url http://localhost:5173
+npx spectra-test-automation --url http://localhost:5173
 ```
 
 Spectra explores all accessible pages and generates comprehensive tests.
@@ -270,297 +209,86 @@ Spectra explores all accessible pages and generates comprehensive tests.
 <summary>📸 See Example Output</summary>
 
 ```
-   ◐◑◒ SPECTRA
-   Full-spectrum test automation
-   ───────────────────────────────────────────
+   ◐ ◑ ◒
+  SPECTRA
+  Full-spectrum test automation
+  ─────────────────────────────────
 
-   Target: http://localhost:5173
-   Mode: full-spectrum
+Mode: cursor-agent
+Target: http://localhost:5173
 
-   ═══════════════════════════════════════════
-   🔵 PLANNER
-   ═══════════════════════════════════════════
+═══════════════════════════════════════════════════════
+  🔵 PLANNER
+═══════════════════════════════════════════════════════
 
-   ✓ Navigated to http://localhost:5173
-   ✓ Discovered 5 pages
-   ✓ Documented 23 interactive elements
-   ✓ Generated test-plan.md
+═══════════════════════════════════════════════════════
+  🟢 GENERATOR
+═══════════════════════════════════════════════════════
 
-   ═══════════════════════════════════════════
-   🟢 GENERATOR
-   ═══════════════════════════════════════════
+═══════════════════════════════════════════════════════
+  🟣 HEALER
+═══════════════════════════════════════════════════════
 
-   ✓ Created pages/HomePage.ts
-   ✓ Created pages/LoginPage.ts
-   ✓ Created pages/DashboardPage.ts
-   ✓ Created tests/auth.spec.ts
-   ✓ Created tests/dashboard.spec.ts
+═══════════════════════════════════════════════════════
+  ✨ SPECTRUM COMPLETE
+═══════════════════════════════════════════════════════
 
-   ═══════════════════════════════════════════
-   🟣 HEALER
-   ═══════════════════════════════════════════
+Generated:
+  Page Objects: 3
+  Test files: 2
 
-   Running tests...
-   ✗ 2 tests failed
-
-   Healing auth.spec.ts...
-   ✓ Fixed: Button 'Sign In' → 'Log In'
-   ✓ Fixed: Input label 'Email' → 'Email Address'
-
-   Re-running tests...
-   ✓ All 8 tests passed
-
-   ═══════════════════════════════════════════
-   ✨ SPECTRUM COMPLETE
-   ═══════════════════════════════════════════
-
-   Generated:
-     📄 Page Objects: 3
-     🧪 Test files: 2
-     ✓ Passed: 8
+Commands:
+  npx playwright test                                  Run all tests
+  npx playwright test --ui                             Run with UI
+  npx playwright show-report .spectra/output/reports   View report
 ```
+
+Each Agent's own output — exploration, file writes, test runs — goes to
+`.spectra/output/<agent>.log`. Add `--debug` to mirror it to the terminal.
 
 </details>
 
----
-
-### Example 2: Single Page Focus
+### Single Page Focus
 
 ```bash
-npx spectra --url http://localhost:5173 --page /login
+npx spectra-test-automation --url http://localhost:5173 --page /login
 ```
 
-Focus only on the login page.
-
----
-
-### Example 3: Feature Scoping
+### Feature Scoping
 
 When a page has multiple features but you only want to test one:
 
 ```bash
-npx spectra \
+npx spectra-test-automation \
   --url http://localhost:5173 \
   --page /checkout \
   --scope "credit card payment form"
 ```
 
-<details>
-<summary>📸 What happens</summary>
+The Planner focuses only on the payment form, the Generator creates
+`PaymentFormPage.ts` and `payment.spec.ts`, and the Healer runs and fixes only
+payment-related tests. Everything else on the page is ignored.
 
-Spectra agents will:
+### Scope File
 
-1. **🔵 Planner** navigates to `/checkout` and focuses ONLY on the payment form
-2. **🟢 Generator** creates `PaymentFormPage.ts` and `payment.spec.ts`
-3. **🟣 Healer** runs and fixes only payment-related tests
-
-Other features on the checkout page (shipping form, order summary, etc.) are **ignored**.
-
-</details>
-
----
-
-### Example 4: Scope File
-
-For complex requirements, create a scope file:
+For complex requirements, copy the template, edit it, and point Spectra at it:
 
 ```bash
-# Create scope file from template
 cp docs/SCOPE-template.md SCOPE.md
+npx spectra-test-automation --url http://localhost:5173 --file SCOPE.md
 ```
 
-Edit `SCOPE.md`:
+> The text of the scope file is read by the agent. See [Trust](#-trust).
 
-```markdown
-# Test Scope Definition
+### Multiple Scopes (Batch Mode)
 
-## Target Feature
-**Feature Name**: User Registration
-
-## Location
-**Page URL**: /register
-
-## Elements to Test
-- [ ] Email input with validation
-- [ ] Password input with strength indicator
-- [ ] Confirm password with matching validation
-- [ ] Terms checkbox
-- [ ] Submit button
-- [ ] Success message
-
-## Out of Scope
-DO NOT test:
-- Login form
-- Social login buttons
-- Navigation header
-```
-
-Run with scope file:
+Run several scopes one after another from a JSON config:
 
 ```bash
-npx spectra --url http://localhost:5173 --file SCOPE.md
+npx spectra-test-automation --batch scopes-batch.json
 ```
 
----
-
-### Example 5: Multiple Scopes (Batch Mode)
-
-Run multiple scopes sequentially using a batch JSON config.
-
-Create `scopes-batch.json`:
-
-```json
-{
-  "url": "http://localhost:5173",
-  "scopes": [
-    {
-      "name": "Login Form",
-      "file": "SCOPE-login.md",
-      "page": "/login",
-      "scope": "email and password validation",
-      "description": "Test user authentication flow"
-    },
-    {
-      "name": "Payment Form",
-      "file": "SCOPE-payment.md",
-      "page": "/checkout",
-      "scope": "card payment form",
-      "description": "Test credit card payment processing"
-    }
-  ]
-}
-```
-
-**JSON Structure:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `url` | string | No | Target URL (overridden by `--url` flag if provided) |
-| `scopes` | array | Yes | Array of scope definitions |
-| `scopes[].name` | string | No | Human-readable name (for documentation) |
-| `scopes[].file` | string | No | Path to scope file (relative or absolute) |
-| `scopes[].page` | string | No | Page to point the run at (e.g. `/checkout`) |
-| `scopes[].scope` | string | No | Feature to focus on (e.g. `"payment form"`) |
-| `scopes[].description` | string | No | Description of what this scope tests |
-
-**Notes:**
-- The `url` field is optional. If not provided, use `--url` flag or set `SPECTRA_URL` environment variable
-- The `name` and `description` fields are optional and used for documentation only
-- The `file`, `page` and `scope` fields are optional. With none of them, the whole app is scanned
-- File paths can be relative to the current directory or absolute paths
-
-Run with batch config:
-
-```bash
-npx spectra --batch scopes-batch.json
-```
-
-> 📖 **See [BATCH-CONFIG.md](docs/BATCH-CONFIG.md) for complete JSON schema documentation**
-
-<details>
-<summary>📸 What happens</summary>
-
-The batch runner will:
-
-1. **Read the scopes** from the JSON config
-2. **Run each scope sequentially**:
-   - 🔵 Planner explores the feature
-   - 🟢 Generator creates tests
-   - 🟣 Healer fixes failures
-3. **Continue to the next scope** even if one fails
-4. **Show a summary** of how many scopes failed and where each scope's results are kept
-
-Each scope keeps its own Plan and Healing Report under
-`.spectra/output/scopes/<number>-<name>/`, so a scope never overwrites the results of the one before it.
-
-Perfect for comprehensive test coverage across your entire application!
-
-</details>
-
----
-
-## 📁 Project Structure
-
-```
-spectra/
-│
-├── 📂 src/                      # TypeScript source (CLI & library)
-│   ├── cli.ts                   # CLI entry point
-│   ├── index.ts                 # Public API exports
-│   ├── 📂 agents/               # Agent runner & scaffolding
-│   └── 📂 utils/                # Shared utilities
-│
-├── 📂 dist/                     # Compiled output (npm package)
-│
-├── 📂 templates/                # Shipped with the package
-│   ├── 📂 agents/               # Agent definitions (Planner, Generator, Healer)
-│   ├── 📂 config/                # playwright.config.ts template
-│   ├── 📂 cursor/                # .cursor/mcp.json template
-│   ├── 📂 docs/                 # Scope template
-│   └── 📂 fixtures/             # Test fixture template
-│
-├── 📂 specs/                    # Pipeline gate docs & Markdown plans
-│   ├── PLANNER-GATE.md          # Planner review checklist
-│   ├── GENERATOR-GATE.md        # Generator review rules
-│   ├── CI-HEALER-POLICY.md      # CI traces, Healer limits, triage
-│   └── PILOT.md                 # Verification pilot instructions
-│
-├── 📂 .github/                  # CI/CD configuration (optional)
-│   └── workflows/
-│       └── test.yml             # GitHub Actions workflow
-│
-├── 📂 docs/                     # Documentation
-│   ├── BATCH-CONFIG.md          # Batch configuration guide
-│   ├── QUICK-REFERENCE.md       # Quick reference guide
-│   ├── SCOPE-template.md        # Template for feature scoping
-│   └── WALKTHROUGH.md           # Walkthrough guide
-├── 📋 scopes-batch.json         # Example batch config
-│
-├── 📂 .spectra/                 # Generated by Spectra (refreshed on every run)
-│   ├── 📂 agents/               # Copied from templates/agents/
-│   │   ├── 📂 planner/
-│   │   │   └── AGENT.md         # Planner instructions
-│   │   ├── 📂 generator/
-│   │   │   └── AGENT.md         # Generator instructions
-│   │   ├── 📂 healer/
-│   │   │   └── AGENT.md         # Healer instructions
-│   │   ├── 📂 shared/
-│   │   │   ├── context.md        # Static shared context
-│   │   │   └── current-scope.md  # Dynamically created scope (runtime)
-│   │   └── .templates.json      # Which template version each file came from
-│   │
-│   └── 📂 output/               # Agent outputs
-│       ├── 📂 plans/
-│       │   └── test-plan.md
-│       ├── 📂 tests/
-│       ├── 📂 reports/
-│       │   ├── results.json
-│       │   ├── status.json      # Machine-readable status
-│       │   └── healing-report.md
-│       ├── 📂 scopes/            # One folder per scope in a batch
-│       └── 📂 test-results/      # Playwright test results
-│
-├── 📂 .cursor/
-│   └── mcp.json                 # Playwright MCP config
-│
-├── 📂 pages/                    # Generated Page Objects
-│   ├── LoginPage.ts
-│   ├── DashboardPage.ts
-│   └── ...
-│
-├── 📂 tests/                    # Generated test files
-│   ├── auth.spec.ts
-│   ├── dashboard.spec.ts
-│   └── ...
-│
-├── 📂 fixtures/                 # Test fixtures
-│   └── pages.ts                 # Reusable page fixtures
-│
-├── ⚙️ playwright.config.ts
-├── ⚙️ tsconfig.json             # TypeScript build config
-├── ⚙️ tsconfig.test.json        # TypeScript config for Playwright tests
-└── 📦 package.json              # npm package definition
-```
+> See [BATCH-CONFIG.md](docs/BATCH-CONFIG.md) for the full JSON schema.
 
 ---
 
@@ -573,10 +301,11 @@ spectra/
 | `--url` | `-u` | Target URL (required) | `-u http://localhost:5173` |
 | `--page` | `-p` | Specific page to test | `-p /checkout` |
 | `--scope` | `-s` | Feature to focus on | `-s "payment form"` |
-| `--file` | `-f` | Scope file path | `-f SCOPE.md` |
+| `--file` | `-f` | Scope file path — see [Trust](#-trust) | `-f SCOPE.md` |
 | `--batch` | `-b` | JSON file with scope definitions | `-b scopes-batch.json` |
-| `--manual` | `-m` | Force manual Cursor mode | `-m` |
-| `--mcp` | | Serve the Spectrum over MCP, so your chat or CLI drives it | `--mcp --url http://localhost:5173` |
+| `--manual` | `-m` | Force manual mode (the prompt goes to your IDE) | `-m` |
+| `--mode` | | Run the agents with this CLI | `--mode codex` |
+| `--mcp` | | Serve the Spectrum over MCP | `--mcp --url http://localhost:5173` |
 | `--init` | | Scaffold project structure | `--init` |
 | `--debug` | | Enable debug output | `--debug` |
 | `--help` | `-h` | Show help | `-h` |
@@ -586,399 +315,106 @@ spectra/
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `SPECTRA_URL` | Base URL for tests | (none — required) |
+| `SPECTRA_MODE` | CLI the agents run with | (the first one found) |
 | `SPECTRA_BROWSERS` | Browsers to test (chromium,firefox,webkit,mobile,all) | `chromium` |
 | `SPECTRA_TAGS` | Filter tests by tags (@smoke,@critical) | (all tests) |
 | `SPECTRA_DEBUG` | Enable debug output | (unset) |
 
 ```bash
-# Set base URL
 export SPECTRA_URL=http://localhost:5173
 
 # Run without --url flag
-npx spectra
-
-# Cross-browser testing
-SPECTRA_BROWSERS=chromium,firefox npx spectra --url http://localhost:5173
-
-# Run only smoke tests
-SPECTRA_TAGS=@smoke npx playwright test
-```
-
-### Playwright Configuration
-
-Edit `playwright.config.ts`:
-
-```typescript
-export default defineConfig({
-  use: {
-    baseURL: process.env.SPECTRA_URL || 'http://localhost:5173',
-    testIdAttribute: 'data-testid',
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-  },
-});
-```
-
-> **Note:** The default port `5173` is the Vite dev server default. Adjust to match your application.
-
----
-
-## 🧪 Running Tests
-
-```bash
-# Run all tests
-npx playwright test
-
-# Run with visible browser
-npx playwright test --headed
-
-# Run with Playwright UI
-npx playwright test --ui
-
-# Run specific test file
-npx playwright test tests/auth.spec.ts
-
-# View HTML report
-npx playwright show-report .spectra/output/reports
-
-# Cross-browser testing
-SPECTRA_BROWSERS=firefox npx playwright test
-SPECTRA_BROWSERS=chromium,firefox npx playwright test
-SPECTRA_BROWSERS=all npx playwright test   # All browsers + mobile
-
-# Filter by tags
-npx playwright test --grep @smoke          # Only smoke tests
-npx playwright test --grep @critical       # Only critical tests
-npx playwright test --grep-invert @slow    # Skip slow tests
-npx playwright test --grep "@auth|@login"  # Multiple tags (OR)
+npx spectra-test-automation
 ```
 
 ### Test Tags
 
-Generated tests can include tags for filtering:
+Every generated test carries at least one tag:
 
-| Tag | Use For |
-|-----|---------|
-| `@smoke` | Quick sanity tests |
-| `@critical` | Business-critical paths |
-| `@e2e` | Full end-to-end flows |
-| `@slow` | Long-running tests |
-| `@flaky` | Known flaky tests |
+| Tag | When to apply |
+|-----|---------------|
+| `@smoke` | Core happy-path scenarios that run on every deploy |
+| `@critical` | Business-critical flows (payments, auth, data integrity) |
+| `@e2e` | Full end-to-end multi-step journeys |
+| `@slow` | Tests expected to take more than 10 seconds |
+| `@validation` | Tests that verify form validation errors |
+| `@empty` | Tests that verify empty state behavior |
+| `@a11y` | Tests that verify keyboard navigation and accessibility |
+| `@interaction` | Tests that verify toggle/checkbox/tab interactions |
+
+Two more tags exist for triage, added by the Healer when it cannot make a
+test pass: `@blocked` (the application is broken) and `@flaky` (the test
+is timing-dependent). The Generator never emits them.
 
 ---
 
 ## 🔧 Modes of Operation
 
-### Fully Automated Mode
+### Fully Automated (default)
 
-When an agent CLI is installed, Spectra uses it:
+When an agent CLI is installed, Spectra detects and uses it — `cursor-agent`,
+`claude-code` (the `claude` binary), `codex`, `opencode`, or `gemini` — and runs
+all three agents without intervention. With no CLI installed, the run falls back
+to manual mode.
 
 ```bash
-npx spectra --url http://localhost:5173
+npx spectra-test-automation --url http://localhost:5173
 ```
 
-The CLI is picked automatically, in this order: `cursor-agent`, `claude`
-(Claude Code), `codex` (OpenAI Codex), `opencode`, `gemini` (Gemini CLI) —
-and if none is installed, the run falls back to manual mode.
+When several CLIs are installed, name the one you want:
 
-All three agents run automatically without intervention. Each agent finishes before the
-next one starts, so the Generator always reads a finished test plan.
+```bash
+npx spectra-test-automation --url http://localhost:5173 --mode codex
+```
 
 ### Native Mode (your own chat or CLI)
 
-You do not need Cursor — or any agent CLI. If you already talk to a model in
-a chat or a terminal, that model can play the Agents:
+Serve the Spectrum over MCP and let the model in your chat or terminal play the
+Agents:
 
 ```bash
-npx spectra --mcp --url http://localhost:5173
+npx spectra-test-automation --mcp --url http://localhost:5173
 ```
 
-This serves the Spectrum over MCP. Your host's model asks for the next
-Agent's brief, does the work it describes, and says it is done:
+### Manual Mode
 
-| Tool | What it does |
-|------|--------------|
-| `spectra_next` | Returns the next Agent's brief: its instructions, the scope, and the files to write |
-| `spectra_done` | Checks the Agent wrote what the catalogue says, writes the completion signal, and returns the next brief |
-| `spectra_status` | Which Agent is running, and which ones are finished |
-
-`spectra --init` writes an MCP config with this server in it, so most hosts
-find it on their own:
-
-```json
-{
-  "mcpServers": {
-    "playwright": { "command": "npx", "args": ["@playwright/mcp@latest", "--browser", "chromium"] },
-    "spectra": { "command": "npx", "args": ["spectra", "--mcp", "--url", "http://localhost:5173"] }
-  }
-}
-```
-
-Put it in `.mcp.json` (Claude Code, and any host that reads it) or in
-`.cursor/mcp.json` (Cursor). Point the `--url` at your application.
-
-### Manual Cursor Mode
-
-If no CLI is available, or you prefer control:
+Force the run to write each Agent's prompt to
+`.spectra/agents/<agent>/current-prompt.md` and wait for its completion signal:
 
 ```bash
-npx spectra --url http://localhost:5173 --manual
-```
-
-Spectra writes the prompt of each agent to `.spectra/agents/<agent>/current-prompt.md`
-and waits until that agent writes its completion signal before starting the next one.
-If the signal does not arrive within 30 minutes, the run stops with an error.
-
-### Installing CLI Tools
-
-Only needed for the automated mode — native mode uses the model you already
-have:
-
-```bash
-# Option 1: cursor-agent
-curl https://cursor.com/install -fsS | bash
-
-# Option 2: Claude Code
-npm install -g @anthropic-ai/claude-code
-
-# Option 3: OpenAI Codex
-npm install -g @openai/codex
-
-# Option 4: opencode
-npm install -g opencode-ai
-
-# Option 5: Gemini CLI
-npm install -g @google/gemini-cli
+npx spectra-test-automation --url http://localhost:5173 --manual
 ```
 
 ---
 
-## 🔄 CI/CD Integration (Optional)
+## 🔐 Trust
 
-Spectra includes an optional GitHub Actions workflow for running tests in CI.
+Spectra runs an AI agent on your machine. In automated mode the agent reads and
+writes files in the project and runs commands there — that is how it writes
+tests and runs them.
 
-### Enable CI
+The trust boundary is the project folder:
 
-`spectra --init` creates `.github/workflows/test.yml` in your project. It will:
-
-1. Install dependencies and Playwright browsers
-2. Install your application's dependencies
-3. Run all Playwright tests with `npx playwright test`
-4. Upload test reports as artifacts
-
-The workflow runs `npx playwright test` with `CI: true` and `SPECTRA_URL` — it
-does not run `pnpm test`, because that script belongs to the Spectra
-repository, not to your project.
-
-### Configuration
-
-Edit the block marked `# UPDATE THIS SECTION FOR YOUR APPLICATION` in
-`.github/workflows/test.yml` to point at your application and install its
-dependencies:
-
-```yaml
-# ============================================
-# UPDATE THIS SECTION FOR YOUR APPLICATION
-# ============================================
-- name: Install your application dependencies
-  working-directory: your-app-directory
-  run: pnpm install
-# ============================================
-```
-
-### Your Application Must Be Started by Playwright
-
-The scaffolded `playwright.config.ts` has no `webServer` block, so add one that
-points at your app:
-
-```typescript
-webServer: {
-  command: 'pnpm run dev',
-  url: 'http://localhost:5173',
-  reuseExistingServer: !process.env.CI,
-},
-```
-
-`reuseExistingServer: !process.env.CI` is the rule this repository uses:
-locally Playwright reuses a server you already started, in CI it starts one and
-fails the job if the port is taken.
-
-Keep `SPECTRA_URL` in the workflow in step with the `baseURL` in your
-Playwright config.
-
-### Environment Variables in CI
-
-| Variable | Description | Value in the workflow |
-|----------|-------------|----------------------|
-| `CI` | Set automatically by GitHub Actions | `true` |
-| `SPECTRA_URL` | Base URL for tests | `http://localhost:5173` |
-
-### Manual Trigger
-
-You can manually trigger the workflow from the GitHub Actions tab using `workflow_dispatch`.
+- Only run Spectra in a project you trust. The agent reads the project it is
+  pointed at, and your `playwright.config.ts` is already code that runs there.
+- A scope file (`--file`) is read by the agent and treated as requirements to
+  test. The text of a file from **outside** the project goes straight to the
+  agent, so only use a file you trust. Spectra says so when the file is outside
+  the project.
+- In Native mode the model in your chat does the work, with the rights you gave it.
 
 ---
 
-## 📊 Generated Output Examples
+## 📚 Documentation
 
-### Test Plan (`.spectra/output/plans/test-plan.md`)
-
-```markdown
-# Test Plan: E-Commerce App
-
-## Pages Discovered
-| Page | URL | Elements |
-|------|-----|----------|
-| Home | / | 12 |
-| Login | /login | 5 |
-| Dashboard | /dashboard | 18 |
-
-## Test Scenarios
-
-### Scenario 1: Valid Login
-- **Priority**: High
-- **Type**: Smoke
-- **Steps**: Enter valid credentials → Submit → See dashboard
-```
-
-### Page Object (`pages/LoginPage.ts`)
-
-```typescript
-import { Page, Locator } from '@playwright/test';
-
-export class LoginPage {
-  readonly page: Page;
-  readonly emailInput: Locator;
-  readonly passwordInput: Locator;
-  readonly submitButton: Locator;
-
-  constructor(page: Page) {
-    this.page = page;
-    this.emailInput = page.getByLabel('Email Address');
-    this.passwordInput = page.getByLabel('Password');
-    this.submitButton = page.getByRole('button', { name: 'Log In' });
-  }
-
-  async login(email: string, password: string): Promise<void> {
-    await this.emailInput.fill(email);
-    await this.passwordInput.fill(password);
-    await this.submitButton.click();
-  }
-}
-```
-
-### Healing Report (`.spectra/output/reports/healing-report.md`)
-
-```markdown
-# Healing Report
-
-## Summary
-| Metric | Count |
-|--------|-------|
-| Tests Run | 8 |
-| Initially Failed | 2 |
-| Healed | 2 |
-| Final Passed | 8 |
-
-## Fixes Applied
-
-### Fix 1: LoginPage.ts
-- **Error**: `Can't find button 'Sign In'`
-- **Fix**: Updated to `getByRole('button', { name: 'Log In' })`
-```
-
----
-
-## ❓ Troubleshooting
-
-<details>
-<summary><b>MCP not connecting in Cursor</b></summary>
-
-1. Completely close Cursor
-2. Verify `.cursor/mcp.json` exists
-3. Reopen Cursor
-4. Test: "Use playwright mcp to navigate to google.com"
-
-</details>
-
-<details>
-<summary><b>Browser not opening</b></summary>
-
-```bash
-pnpm exec playwright install chromium
-```
-
-</details>
-
-<details>
-<summary><b>Tests keep failing after healing</b></summary>
-
-1. Verify your app is running
-2. Check SPECTRA_URL is correct
-3. Review `.spectra/output/reports/healing-report.md`
-4. Try with a more specific scope
-
-</details>
-
-<details>
-<summary><b>Planner explores too much / too little</b></summary>
-
-Use `--page` and `--scope` to narrow focus:
-
-```bash
-npx spectra --url http://localhost:5173 --page /login --scope "login form"
-```
-
-</details>
-
----
-
-## 📦 Publishing to npm
-
-### Build and publish
-
-```bash
-# Build the package
-pnpm run build
-
-# Publish to npm registry
-npm publish
-
-# Or publish to a private registry
-npm publish --registry https://your-registry.example.com
-```
-
-### Install from private registry
-
-Add a `.npmrc` to consuming projects:
-
-```ini
-@yourorg:registry=https://your-registry.example.com
-//your-registry.example.com/:_authToken=${NPM_TOKEN}
-```
-
-Then install:
-
-```bash
-pnpm add -D @yourorg/spectra-test-automation @playwright/test
-```
-
-### Install from Git (Bitbucket / GitHub)
-
-```bash
-# SSH
-pnpm add -D "git+ssh://git@bitbucket.org/yourorg/spectra.git"
-
-# HTTPS
-pnpm add -D "git+https://github.com/fifijo/spectra.git"
-```
-
-### Versioning
-
-Follow [semver](https://semver.org/):
-- **Patch** (`0.1.1`): bug fixes, doc updates
-- **Minor** (`0.2.0`): new features, new agent templates
-- **Major** (`1.0.0`): breaking CLI changes or peer `@playwright/test` range changes
+| Document | What it covers |
+|----------|----------------|
+| [WALKTHROUGH.md](docs/WALKTHROUGH.md) | Step-by-step guide with a detailed flow and examples |
+| [QUICK-REFERENCE.md](docs/QUICK-REFERENCE.md) | Commands, env vars, test tags, key files, troubleshooting |
+| [BATCH-CONFIG.md](docs/BATCH-CONFIG.md) | Batch JSON schema and examples |
+| [SCOPE-template.md](docs/SCOPE-template.md) | Template for feature scoping |
+| [CI-CD.md](docs/CI-CD.md) | GitHub Actions workflow for running tests in CI |
+| [PUBLISHING.md](docs/PUBLISHING.md) | Publishing to npm and versioning |
 
 ---
 

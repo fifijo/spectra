@@ -100,4 +100,27 @@ describe('detectMode', () => {
 
     expect(detectMode(false)).toBe('manual');
   });
+
+  it('returns the mode that was asked for, whatever else is installed', () => {
+    mockedExecSync.mockReturnValue(Buffer.from('/usr/bin/codex'));
+
+    expect(detectMode(false, 'codex')).toBe('codex');
+  });
+
+  it('returns "manual" when the mode that was asked for is manual', () => {
+    expect(detectMode(false, 'manual')).toBe('manual');
+    expect(mockedExecSync).not.toHaveBeenCalled();
+  });
+
+  it('fails when the mode that was asked for is unknown', () => {
+    expect(() => detectMode(false, 'nope')).toThrow(/Unknown mode "nope"/);
+  });
+
+  it('fails when the CLI of the mode that was asked for is not installed', () => {
+    mockedExecSync.mockImplementation(() => {
+      throw new Error('not found');
+    });
+
+    expect(() => detectMode(false, 'codex')).toThrow(/codex CLI is not installed/);
+  });
 });

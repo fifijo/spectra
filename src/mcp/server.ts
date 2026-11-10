@@ -15,8 +15,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import type { Agent } from '../agents/catalogue.js';
+import { type Agent, SCOPE_CONTEXT } from '../agents/catalogue.js';
 import { buildPrompt, type RunContext } from '../agents/runner.js';
+import { missingOutputs, projectPath, type Snapshot } from '../agents/verify.js';
 import { PACKAGE_ROOT } from '../utils/constants.js';
 
 const PROTOCOL_VERSION = '2024-11-05';
@@ -26,10 +27,14 @@ export interface McpState {
   outputDir: string;
   /** Absolute path of the installed agents dir. */
   agentsDir: string;
+  /** Absolute path of the project the run belongs to. */
+  projectRoot: string;
   /** The Agents of the Spectrum, in order. */
   agents: Agent[];
   /** Index of the Agent that is running. */
   index: number;
+  /** What the files the Agents write looked like when the run started. */
+  snapshot: Snapshot;
 }
 
 export interface McpRequest {
@@ -74,13 +79,8 @@ const TOOLS = [
   },
 ];
 
-/** The path of an installed file, as the Agent sees it: relative to the project root. */
-function projectPath(target: string): string {
-  return path.relative(process.cwd(), target);
-}
-
 /** The files an Agent must have written, as paths relative to the project root. */
-function expectedFiles(agent: Agent, state: McpState): string[] {
+function filesToWrite(agent: Agent, state: McpState): string[] {
   return [
     ...agent.outputs.map((file) => projectPath(path.join(state.outputDir, file))),
     ...agent.projectOutputs,
@@ -97,7 +97,7 @@ function brief(agent: Agent, state: McpState): Record<string, unknown> {
   };
 
   const instructionsPath = path.join(state.agentsDir, agent.name, 'AGENT.md');
-  const scopePath = path.join(state.agentsDir, 'shared', 'current-scope.md');
+  const scopePath = path.join(state.agentsDir, SCOPE_CONTEXT);
 
   return {
     agent: agent.name,
@@ -105,7 +105,7 @@ function brief(agent: Agent, state: McpState): Record<string, unknown> {
     scope: fs.existsSync(scopePath) ? fs.readFileSync(scopePath, 'utf-8') : '',
     prompt: buildPrompt(agent, ctx),
     read: agent.inputs.map((file) => projectPath(path.join(state.outputDir, file))),
-    write: expectedFiles(agent, state),
+    write: filesToWrite(agent, state),
     completionSignal: projectPath(path.join(state.outputDir, agent.completionSignal)),
   };
 }
@@ -113,11 +113,6 @@ function brief(agent: Agent, state: McpState): Record<string, unknown> {
 /** The Agent that is running, or null when the Spectrum is finished. */
 function currentAgent(state: McpState): Agent | null {
   return state.agents[state.index] ?? null;
-}
-
-/** What the Agent still has to write: the files the catalogue says it writes. */
-function missingOutputs(agent: Agent, state: McpState): string[] {
-  return expectedFiles(agent, state).filter((file) => !fs.existsSync(path.resolve(file)));
 }
 
 function textResult(payload: unknown, isError = false): McpResponse['result'] {
@@ -184,14 +179,19 @@ export function handleMcpRequest(request: McpRequest, state: McpState): McpRespo
       }
 
       if (tool === 'spectra_done') {
-        const name = typeof args.agent === 'string' ? args.agent : currentAgent(state)?.name;
-        const agent = state.agents.find((a) => a.name === name);
-
+        const agent = currentAgent(state);
         if (!agent) {
-          return reply(textResult({ error: `Unknown Agent: ${String(name)}` }, true));
+          return reply(textResult({ done: true, message: 'The Spectrum is complete.' }));
         }
 
-        const missing = missingOutputs(agent, state);
+        const name = typeof args.agent === 'string' ? args.agent : agent.name;
+        if (name !== agent.name) {
+          return reply(
+            textResult({ error: `The running Agent is ${agent.name}, not ${String(name)}.` }, true),
+          );
+        }
+
+        const missing = missingOutputs(agent, state.outputDir, state.projectRoot, state.snapshot);
         if (missing.length > 0) {
           return reply(
             textResult(
@@ -209,7 +209,7 @@ export function handleMcpRequest(request: McpRequest, state: McpState): McpRespo
         fs.mkdirSync(path.dirname(signal), { recursive: true });
         fs.writeFileSync(signal, `${new Date().toISOString()}\n`, 'utf-8');
 
-        state.index = state.agents.indexOf(agent) + 1;
+        state.index += 1;
         const next = currentAgent(state);
         return reply(
           textResult(

@@ -4,6 +4,9 @@ node_modules/
 # Build output
 dist/
 
+# Coverage report
+coverage/
+
 # Spectra outputs
 .spectra/output/
 .spectra/agents/
