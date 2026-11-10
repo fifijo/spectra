@@ -257,14 +257,14 @@ sequenceDiagram
 **Purpose.** The single completion rule shared by both adapters.
 
 **Key abstractions.**
-- `Snapshot = Map<absolutePath, mtimeMs>`.
-- `takeSnapshot` records every `agent.outputs` file (`-1` when absent) and every file under each folder in `writes ∪ projectOutputs` that ends with `/`.
-- `changedSince` accepts a file when it is absent from the snapshot or its mtime differs.
+- `Snapshot = Map<absolutePath, Fingerprint | undefined>`; a `Fingerprint` is the mtime and the SHA-1 of the content.
+- `takeSnapshot` records every `agent.outputs` file (absent when it does not exist) and every file under each folder in `writes ∪ projectOutputs` that ends with `/`.
+- `changedSince` accepts a file when it is absent from the snapshot, or when its time or its content changed.
 - `missingOutputs` checks `outputs` file-by-file and `writes` folder-by-folder (one changed file is enough).
 - `countChanged` powers the summary and excludes `.d.ts`.
 - `projectPath` is the single path-presentation helper (relative to `process.cwd()`).
 
-**Known limits.** mtime granularity (a same-tick rewrite is invisible, annotated with `shortcut:`); the snapshot is per-run, not per-Scope, so a Batch reuses one snapshot (correct, because `cleanRun` removes artefacts between Scopes); `process.cwd()` is read at call time rather than injected.
+**Known limits.** a rewrite with the same bytes in the same clock tick is invisible (annotated with `shortcut:`); the snapshot is per-run, not per-Scope, so a Batch reuses one snapshot (correct, because `cleanRun` removes artefacts between Scopes); `process.cwd()` is read at call time rather than injected.
 
 ### 4.3 Runner — `src/agents/runner.ts` (209 lines)
 
@@ -409,7 +409,7 @@ There is no ORM, no schema library and no migration system. `Scope` and `Batch` 
 ### 6.3 Data access patterns
 
 - **Recursive folder walk** — `verify.listFiles` returns `[]` on any read error, making absent folders equivalent to empty ones. It is synchronous and unbounded; fine for test projects.
-- **mtime as change journal** — the snapshot is the only "history". No content hashing (the `shortcut:` comment names the upgrade path).
+- **mtime and content as change journal** — the snapshot is the only "history". A file counts as changed when its time or its SHA-1 changed; a rewrite with the same bytes in the same tick stays invisible (the `shortcut:` comment names the upgrade path).
 - **Copy-on-verify for Batch** — `preserve` copies `agent.outputs` only; `reports/results.json` and generated project files are *not* copied (ADR 0002 states the cost explicitly).
 - **Clean-then-run** — `cleanRun` removes signals, artefacts, `results.json` and logs before every Scope. Deletion precedes creation rather than relying on overwrite semantics.
 - **Atomicity** — none. A crash can leave a partial plan, a stale signal or half-installed templates. Each subsequent run cleans the outputs; templates are re-copied from the package. There is no lock, so two concurrent runs in one project would interfere.

@@ -74,6 +74,17 @@ describe('missingOutputs', () => {
     expect(missingOutputs(agentNamed('planner'), outputDir, projectDir, snapshot)).toEqual([]);
   });
 
+  it('counts a file the Agent rewrote in the same clock tick as done', () => {
+    const plan = write(path.join('.spectra', 'output', 'plans', 'test-plan.md'), 'old');
+    const snapshot = takeSnapshot(AGENTS, outputDir, projectDir);
+    fs.writeFileSync(plan, 'new', 'utf-8');
+    // The file system gave the rewrite the same time it gave the snapshot.
+    const before = fs.statSync(plan);
+    fs.utimesSync(plan, before.atime, before.mtime);
+
+    expect(missingOutputs(agentNamed('planner'), outputDir, projectDir, snapshot)).toEqual([]);
+  });
+
   it('counts a folder without a new file as missing', () => {
     fs.mkdirSync(path.join(projectDir, 'tests'), { recursive: true });
     const snapshot = takeSnapshot(AGENTS, outputDir, projectDir);

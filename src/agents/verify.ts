@@ -5,13 +5,20 @@
  * disagree about what an Agent owes the run.
  */
 
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
 import type { Agent } from './catalogue.js';
 
+/** What a file looked like: when it changed and what it holds. */
+export interface Fingerprint {
+  mtime: number;
+  hash: string;
+}
+
 /** What the files the Agents write looked like when the run started. */
-export type Snapshot = Map<string, number>;
+export type Snapshot = Map<string, Fingerprint | undefined>;
 
 /** The path as the Agent sees it: relative to the project root it runs in. */
 export function projectPath(target: string): string {
@@ -35,12 +42,18 @@ export function listFiles(dir: string): string[] {
   return files;
 }
 
-/** When a file was last written, or -1 when there is no such file. */
-function mtimeOf(file: string): number {
+/**
+ * What a file looks like right now, or undefined when there is no such file.
+ *
+ * The content is part of the fingerprint: the clock of the file system is
+ * coarse, so two writes in the same tick carry the same time.
+ */
+function fingerprintOf(file: string): Fingerprint | undefined {
   try {
-    return fs.statSync(file).mtimeMs;
+    const hash = createHash('sha1').update(fs.readFileSync(file)).digest('hex');
+    return { mtime: fs.statSync(file).mtimeMs, hash };
   } catch {
-    return -1;
+    return undefined;
   }
 }
 
@@ -57,11 +70,11 @@ export function takeSnapshot(agents: Agent[], outputDir: string, projectRoot: st
   for (const agent of agents) {
     for (const file of agent.outputs) {
       const full = path.join(outputDir, file);
-      snapshot.set(full, mtimeOf(full));
+      snapshot.set(full, fingerprintOf(full));
     }
     for (const dir of foldersOf(agent)) {
       for (const file of listFiles(path.join(projectRoot, dir))) {
-        snapshot.set(file, mtimeOf(file));
+        snapshot.set(file, fingerprintOf(file));
       }
     }
   }
@@ -79,15 +92,21 @@ function foldersOf(agent: Agent): string[] {
 /**
  * A file that is there now and is not the one the snapshot remembers.
  *
- * shortcut: the file's timestamp says it changed, so a rewrite with the same
- * bytes inside one filesystem tick is not seen. Compare content hashes when a
- * run can write the same bytes twice within a tick.
+ * A file counts when its time or its content changed. The content is there
+ * because the clock of the file system is coarse: a rewrite in the same tick
+ * as the run start carries the same time, and the run would call it untouched.
+ *
+ * shortcut: a rewrite with the same bytes in the same tick is invisible, the
+ * file system offers nothing else to see. Compare inode numbers when a run
+ * has to tell two identical rewrites apart.
  */
 function changedSince(file: string, snapshot: Snapshot): boolean {
-  const now = mtimeOf(file);
-  if (now < 0) return false;
+  const now = fingerprintOf(file);
+  if (!now) return false;
+  if (!snapshot.has(file)) return true;
   const before = snapshot.get(file);
-  return before === undefined || before !== now;
+  if (!before) return true;
+  return before.mtime !== now.mtime || before.hash !== now.hash;
 }
 
 /**
