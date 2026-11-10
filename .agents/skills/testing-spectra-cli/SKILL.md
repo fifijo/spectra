@@ -19,7 +19,7 @@ Verify `dist/bin.js`, `dist/cli.js`, and `dist/index.js` all exist after build.
 
 ### 1. CLI Entry Point (`dist/bin.js`)
 - `node dist/bin.js --help` should exit 0 and show usage
-- `node dist/bin.js --init` should scaffold `.spectra/agents/`, `tests/e2e/`, `specs/` in CWD
+- `node dist/bin.js --init` should scaffold `.spectra/agents/`, `tests/`, `specs/` in CWD
 - `node dist/bin.js` with no args should exit 1 with "URL required" error
 - Run `--init` in a temp directory to avoid polluting the repo
 

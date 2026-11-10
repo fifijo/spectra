@@ -15,11 +15,11 @@ Test files follow the pattern `src/**/__tests__/**/*.test.ts`:
 
 | Test File | What It Tests |
 |-----------|--------------|
-| `src/__tests__/bin.test.ts` | CLI argument parsing (re-implements `parseCliArgs` with `parseArgs`) |
+| `src/__tests__/args.test.ts` | `parseCliArgs()` — command line flags and modes |
 | `src/__tests__/cli.test.ts` | `run()` function: init mode, URL validation, agent pipeline, batch mode, summary |
 | `src/agents/__tests__/init.test.ts` | `initAgents()` template copying, `scaffold()` directory creation |
 | `src/agents/__tests__/runner.test.ts` | `buildPrompt()` output, `runAgent()` mode dispatching |
-| `src/utils/__tests__/constants.test.ts` | Constants values and types (`PACKAGE_ROOT`, `TEMPLATE_DIR`, `DEFAULTS`) |
+| `src/utils/__tests__/constants.test.ts` | Constants values and types (`PACKAGE_ROOT`, `TEMPLATE_DIR`, `DEFAULT_OUTPUT_DIR`) |
 | `src/utils/__tests__/detect-mode.test.ts` | `detectMode()` CLI tool detection logic |
 | `src/utils/__tests__/logger.test.ts` | Logger ANSI color output for each method |
 | `src/utils/__tests__/scope.test.ts` | `createScopeContext()` markdown generation |

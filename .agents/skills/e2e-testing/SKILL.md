@@ -23,7 +23,7 @@ This starts a dev server on `http://localhost:5173`.
 ```bash
 pnpm run test:seed
 ```
-Runs `tests/e2e/seed.spec.ts` which validates:
+Runs `tests/seed.spec.ts` which validates:
 - Target URL is reachable (HTTP status < 400)
 - Page has a document title
 
@@ -44,8 +44,8 @@ pnpm report             # open HTML test report
 
 ### Run Specific Test File
 ```bash
-pnpm exec playwright test tests/e2e/seed.spec.ts
-pnpm exec playwright test tests/auth.spec.ts
+pnpm exec playwright test tests/seed.spec.ts
+pnpm exec playwright test tests/login.spec.ts
 ```
 
 ## Cross-Browser Testing
@@ -94,11 +94,12 @@ SPECTRA_TAGS=@smoke pnpm test           # via env var
 
 All output paths are gitignored via `.spectra/output/`.
 
-## Seed Spec Details (`tests/e2e/seed.spec.ts`)
-The seed spec is the environment readiness contract. It:
-- Reads `SPECTRA_URL` env var (defaults to `http://localhost:5173`)
-- Provides a `requireEnv()` helper for additional required env vars
-- Contains commented-out templates for authentication, test data, and feature flag checks
+## Seed Spec Details (`tests/seed.spec.ts`)
+The seed spec is the environment readiness contract. It runs two tests, both tagged `@smoke`:
+- `target URL is reachable` - the base URL responds with a status below 400
+- `document title and app shell match dummy-test-app` - the title matches `/dummy-test-app/i` and the app shell's main navigation is visible
+
+The URL comes from `playwright.config.ts` (`SPECTRA_URL`, default `http://localhost:5173`); the spec reads no env var of its own.
 
 ## Devin Secrets Needed
 None required for basic E2E testing against the dummy-test-app. If testing against an authenticated app, you may need `SPECTRA_AUTH_USER` and `SPECTRA_AUTH_PASS`.

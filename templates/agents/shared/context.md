@@ -10,7 +10,6 @@
 ## Project Structure
 ```
 ├── tests/                    # Test files (*.spec.ts)
-├── tests/e2e/                # End-to-end seed and integration tests
 ├── pages/                    # Page Objects (*Page.ts)
 ├── fixtures/                 # Test fixtures
 ├── specs/                    # Markdown plans and gate documentation

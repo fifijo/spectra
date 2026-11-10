@@ -15,7 +15,7 @@ export const OUTPUT_DIRS = [
 
 /** The folders of a Spectra project, relative to the project root. */
 export const PROJECT_DIRS = [
-  'tests/e2e',
+  'tests',
   'specs',
   'pages',
   'fixtures',

@@ -1,5 +1,5 @@
 /**
- * Spectra page object fixtures. Prefer `import { test, expect } from '../fixtures/pages'`.
+ * Spectra page object fixtures. Prefer `import { test, expect } from '../fixtures/pages.js'`.
  */
 
 import { test as base } from '@playwright/test';

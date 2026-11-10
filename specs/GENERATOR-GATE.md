@@ -7,7 +7,7 @@ Review rules applied to Generator output **before** tests are merged.
 | Input | Source | Required |
 |-------|--------|----------|
 | Approved plan | `specs/<ISSUE>-<slug>.md` | Yes |
-| Seed spec | `tests/e2e/seed.spec.ts` | Yes |
+| Seed spec | `tests/seed.spec.ts` | Yes |
 | Existing page objects | `pages/` | If any |
 | Existing fixtures | `fixtures/pages.ts` | If any |
 
@@ -41,7 +41,7 @@ Every generated test must have at least one tag.
 - Page Objects go in `pages/<Name>Page.ts`.
 - Tests go in `tests/<feature>.spec.ts`.
 - Fixtures are updated in `fixtures/pages.ts`.
-- Imports use the fixtures pattern (`import { test, expect } from '../fixtures/pages'`) when available.
+- Imports use the fixtures pattern (`import { test, expect } from '../fixtures/pages.js'`) when available.
 
 ## PR process
 

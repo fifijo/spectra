@@ -117,14 +117,14 @@ For each page discovered, document:
 - **Additional UI components found** (date picker, autocomplete, toast, etc.)
 - **UX flows identified** (keyboard nav, offline, optimistic UI, etc.)
 
-### Step 4: Identify User Flows
+### Step 5: Identify User Flows
 Map out:
 - Authentication flow (if any)
 - Main user journeys
 - Critical business paths
 - Error scenarios
 
-### Step 5: Generate Test Plan
+### Step 6: Generate Test Plan
 
 Create `.spectra/output/plans/test-plan.md` with this structure:
 

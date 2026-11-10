@@ -6,7 +6,7 @@
  * page object instantiation.
  *
  * Usage:
- *   import { test, expect } from '../fixtures/pages';
+ *   import { test, expect } from '../fixtures/pages.js';
  *
  *   test('example', async ({ dashboardPage }) => {
  *     await dashboardPage.goto();

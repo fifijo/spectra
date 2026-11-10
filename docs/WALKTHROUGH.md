@@ -382,7 +382,7 @@ spectra/
 │   ├── docs/                   # Scope template
 │   └── fixtures/               # Test fixture template
 ├── specs/                      # Pipeline gate docs & Markdown plans
-├── tests/e2e/                  # End-to-end seed & integration tests
+├── tests/                      # End-to-end & integration tests
 │   └── seed.spec.ts            # Environment readiness contract
 ├── docs/                       # Documentation
 │   └── SCOPE-template.md       # Scoping template

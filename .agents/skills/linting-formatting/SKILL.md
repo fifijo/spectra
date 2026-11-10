@@ -1,7 +1,7 @@
 # Linting & Formatting
 
 ## Overview
-Spectra uses **Biome** (not ESLint/Prettier) for linting and formatting. Version: `@biomejs/biome` v2.4.9. Configuration is in `biome.json`.
+Spectra uses **Biome** (not ESLint/Prettier) for linting and formatting. Version: `@biomejs/biome` v2.4.13 (the version pinned in `package.json`). Configuration is in `biome.json`.
 
 ## Commands
 
