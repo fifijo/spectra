@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/pages.js';
+import { expect, test } from '../fixtures/pages.js';
 
 test.describe('Notifications', { tag: ['@e2e'] }, () => {
   test('mark read, mark all read, dismiss to empty, toggle settings', async ({

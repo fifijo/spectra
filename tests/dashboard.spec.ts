@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/pages.js';
+import { expect, test } from '../fixtures/pages.js';
 
 test.describe('Dashboard', { tag: ['@smoke', '@e2e'] }, () => {
   test('shows stats grid, overview, and recent sales', async ({ dashboardPage }) => {

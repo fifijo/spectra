@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/pages.js';
+import { expect, test } from '../fixtures/pages.js';
 
 test.describe('Kanban', { tag: ['@e2e', '@slow'] }, () => {
   test('drags a card between columns, adds a task, deletes via menu', async ({ kanbanPage }) => {

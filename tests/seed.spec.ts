@@ -10,7 +10,7 @@
  * unreachable, the suite aborts immediately with a clear message.
  */
 
-import { test, expect } from '../fixtures/pages.js';
+import { expect, test } from '../fixtures/pages.js';
 
 /* ------------------------------------------------------------------ */
 /*  Seed tests (aligns with test plan: smoke + shell)                 */

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { TEMPLATE_DIR } from '../constants.js';
+import { PACKAGE_ROOT, TEMPLATE_DIR } from '../constants.js';
 import { OUTPUT_DIRS, PROJECT_DIRS } from '../layout.js';
 
 describe('project layout', () => {
@@ -24,6 +24,14 @@ describe('project layout', () => {
 
     for (const dir of OUTPUT_DIRS) {
       expect(output).toContain(dir);
+    }
+  });
+
+  it('keeps the lint scope covering every folder the agents write into', () => {
+    const biome = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, 'biome.json'), 'utf-8'));
+
+    for (const dir of ['tests', 'pages', 'fixtures', 'templates']) {
+      expect(biome.files.includes).toContain(`${dir}/**`);
     }
   });
 });

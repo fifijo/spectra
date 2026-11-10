@@ -9,6 +9,10 @@
     "ignoreUnknown": true,
     "includes": [
       "src/**",
+      "tests/**",
+      "pages/**",
+      "fixtures/**",
+      "templates/**",
       "biome.json",
       "vitest.config.ts",
       "playwright.config.ts",

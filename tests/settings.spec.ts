@@ -1,7 +1,9 @@
-import { test, expect } from '../fixtures/pages.js';
+import { expect, test } from '../fixtures/pages.js';
 
 test.describe('Settings', { tag: ['@e2e'] }, () => {
-  test('tabs, profile save feedback, appearance and security controls', async ({ settingsPage }) => {
+  test('tabs, profile save feedback, appearance and security controls', async ({
+    settingsPage,
+  }) => {
     await settingsPage.goto();
     await expect(settingsPage.heading).toBeVisible();
 

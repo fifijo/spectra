@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/pages.js';
+import { expect, test } from '../fixtures/pages.js';
 
 test.describe('Products', { tag: ['@e2e'] }, () => {
   test('search, category filter, slider, and cart count', async ({ productsPage }) => {

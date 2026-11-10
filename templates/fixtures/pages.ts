@@ -25,6 +25,7 @@ import { test as base } from '@playwright/test';
  * Define the fixture types
  * Add new page types here as page objects are generated
  */
+// biome-ignore lint/complexity/noBannedTypes: the Generator adds the fixtures
 type PageFixtures = {
   // dashboardPage: DashboardPage;
 };

@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/pages.js';
+import { expect, test } from '../fixtures/pages.js';
 
 test.describe('Checkout wizard', { tag: ['@e2e', '@critical'] }, () => {
   test('back disabled on first step; total matches summary; place order succeeds', async ({

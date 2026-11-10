@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/pages.js';
+import { expect, test } from '../fixtures/pages.js';
 
 test.describe('Users table', { tag: ['@e2e'] }, () => {
   test('search, filters, sort, pagination, selection, row menu', async ({ usersPage }) => {
