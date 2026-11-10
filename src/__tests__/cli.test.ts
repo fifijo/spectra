@@ -37,6 +37,7 @@ vi.mock('../utils/logger.js', () => ({
   },
 }));
 
+import { AGENTS } from '../agents/catalogue.js';
 import { initAgents, scaffold } from '../agents/init.js';
 import { runAgent } from '../agents/runner.js';
 import { run } from '../cli.js';
@@ -47,6 +48,18 @@ function makeTmpDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'spectra-cli-'));
 }
 
+/** Make a mocked Agent write the files the catalogue says it writes. */
+function writeDeclaredOutputs(agentName: string): void {
+  const output = path.join(process.cwd(), '.spectra', 'output');
+  const agent = AGENTS.find((a) => a.name === agentName);
+  if (!agent) return;
+  for (const file of agent.outputs) {
+    const full = path.join(output, file);
+    fs.mkdirSync(path.dirname(full), { recursive: true });
+    fs.writeFileSync(full, 'x', 'utf-8');
+  }
+}
+
 describe('run', () => {
   let originalCwd: string;
   let tmpDir: string;
@@ -54,6 +67,10 @@ describe('run', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // By default every Agent writes what the catalogue says it writes.
+    vi.mocked(runAgent).mockImplementation(async (agent) => {
+      writeDeclaredOutputs(agent.name);
+    });
     originalCwd = process.cwd();
     tmpDir = makeTmpDir();
     tmpDirs.push(tmpDir);
@@ -128,10 +145,11 @@ describe('run', () => {
 
     it('waits for each agent before starting the next one', async () => {
       const order: string[] = [];
-      vi.mocked(runAgent).mockImplementation(async (options) => {
-        order.push(`start:${options.name}`);
+      vi.mocked(runAgent).mockImplementation(async (agent) => {
+        order.push(`start:${agent.name}`);
         await new Promise((resolve) => setTimeout(resolve, 5));
-        order.push(`end:${options.name}`);
+        order.push(`end:${agent.name}`);
+        writeDeclaredOutputs(agent.name);
       });
 
       await run({ url: 'http://localhost:5173' });
@@ -154,6 +172,33 @@ describe('run', () => {
       expect(ok).toBe(false);
       expect(runAgent).toHaveBeenCalledTimes(1);
       expect(logger.error).toHaveBeenCalled();
+    });
+
+    it('stops the pipeline when an agent writes no output', async () => {
+      vi.mocked(runAgent).mockImplementation(async () => {});
+
+      const ok = await run({ url: 'http://localhost:5173' });
+
+      expect(ok).toBe(false);
+      expect(runAgent).toHaveBeenCalledTimes(1);
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('test-plan.md'));
+    });
+
+    it('stops the pipeline when a later agent writes no output', async () => {
+      vi.mocked(runAgent).mockImplementation(async (agent) => {
+        if (agent.name === 'planner') {
+          const output = path.join(process.cwd(), '.spectra', 'output');
+          fs.mkdirSync(path.join(output, 'plans'), { recursive: true });
+          fs.writeFileSync(path.join(output, 'plans', 'test-plan.md'), 'plan', 'utf-8');
+        }
+      });
+
+      const ok = await run({ url: 'http://localhost:5173' });
+
+      expect(ok).toBe(false);
+      // The Healer runs before the CLI can see that it wrote nothing; it is the last Agent.
+      expect(runAgent).toHaveBeenCalledTimes(3);
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('healing-report.md'));
     });
 
     it('passes correct colors and emojis to agents', async () => {
@@ -319,13 +364,15 @@ describe('run', () => {
 
       // The agents write to the same file for every scope, like the real ones do.
       let scope = 0;
-      vi.mocked(runAgent).mockImplementation(async (options) => {
+      vi.mocked(runAgent).mockImplementation(async (agent) => {
         const output = path.join(process.cwd(), '.spectra', 'output');
-        if (options.name === 'planner') {
+        if (agent.name === 'planner') {
           scope += 1;
+          writeDeclaredOutputs(agent.name);
           fs.writeFileSync(path.join(output, 'plans', 'test-plan.md'), `plan ${scope}`, 'utf-8');
         }
-        if (options.name === 'healer') {
+        if (agent.name === 'healer') {
+          writeDeclaredOutputs(agent.name);
           fs.writeFileSync(
             path.join(output, 'reports', 'healing-report.md'),
             `report ${scope}`,
@@ -396,10 +443,13 @@ describe('run', () => {
       expect(logger.separator).toHaveBeenCalledWith('blue', '❌ SPECTRUM FAILED');
     });
 
-    it('removes the status file of a previous run', async () => {
+    it('removes the status file of a previous run when no agent writes one', async () => {
       const statusPath = path.join(tmpDir, '.spectra', 'output', 'reports', 'status.json');
       fs.mkdirSync(path.dirname(statusPath), { recursive: true });
       fs.writeFileSync(statusPath, '{}', 'utf-8');
+
+      // No agent writes anything, so the stale file cannot be rewritten.
+      vi.mocked(runAgent).mockImplementation(async () => {});
 
       await run({ url: 'http://localhost:5173' });
 
@@ -412,8 +462,9 @@ describe('run', () => {
       fs.writeFileSync(path.join(tmpDir, 'pages', 'OldPage.ts'), 'old');
       fs.writeFileSync(path.join(tmpDir, 'tests', 'old.spec.ts'), 'old');
 
-      vi.mocked(runAgent).mockImplementation(async (options) => {
-        if (options.name === 'generator') {
+      vi.mocked(runAgent).mockImplementation(async (agent) => {
+        writeDeclaredOutputs(agent.name);
+        if (agent.name === 'generator') {
           fs.writeFileSync(path.join(tmpDir, 'pages', 'NewPage.ts'), 'new');
           fs.writeFileSync(path.join(tmpDir, 'tests', 'new.spec.ts'), 'new');
         }

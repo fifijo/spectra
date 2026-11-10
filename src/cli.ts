@@ -48,6 +48,11 @@ function preserve(agent: Agent, outputDir: string, scopeDir: string): void {
   }
 }
 
+/** The output files an Agent was supposed to write, and that are missing. */
+function missingOutputs(agent: Agent, outputDir: string): string[] {
+  return agent.outputs.filter((file) => !fs.existsSync(path.join(outputDir, file)));
+}
+
 /** A folder name for a Scope: readable, and unique because it carries the Scope's number. */
 function slugify(label: string): string {
   const slug = label
@@ -235,6 +240,13 @@ async function runScope(
       logger.error(
         `Agent ${agent.name} failed: ${err instanceof Error ? err.message : String(err)}`,
       );
+      ok = false;
+      break;
+    }
+    const missing = missingOutputs(agent, outputDir);
+    if (missing.length > 0) {
+      const dir = path.relative(cwd, outputDir);
+      logger.error(`Agent ${agent.name} did not write ${missing.join(', ')} (relative to ${dir})`);
       ok = false;
       break;
     }
