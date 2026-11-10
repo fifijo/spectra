@@ -8,15 +8,18 @@ Review checklist applied **before** a Planner-generated plan is promoted to the 
 |-------|--------|----------|
 | Issue / story text | Work tracker (Linear, Jira, etc.) | Yes |
 | Acceptance Criteria (AC) | Story description or linked doc | Yes |
-| Seed reference | `tests/seed.spec.ts` | Yes |
+| Seed reference | `tests/seed.spec.ts` (from `spectra --init`) | Yes |
 | Preview / staging URL | CI deploy or local dev server | Yes |
 | Feature flags | Seed or env config | If applicable |
+
+The seed spec is created by `spectra --init` and checks that the target URL
+answers and that the page has a title.
 
 ## Pre-flight checks
 
 1. **AC clarity** - Every acceptance criterion is measurable (expected text, state, URL, role).
 2. **URL reachable** - The `baseURL` responds with HTTP 200 (or expected redirect).
-3. **Seed passes** - `npx playwright test tests/seed.spec.ts` is green.
+3. **Seed passes** - `npx playwright test tests/seed.spec.ts` is green (the spec comes from `spectra --init`).
 4. **Flags enabled** - Any feature flags required by the story are active in the E2E environment.
 5. **Test identity available** - If the story requires a new role or user type, the identity exists in the seed.
 

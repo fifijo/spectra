@@ -17,6 +17,7 @@
   "files": [
     "dist",
     "!dist/**/__tests__",
+    "!dist/**/*.map",
     "templates",
     "specs",
     "docs",
@@ -25,6 +26,7 @@
   ],
   "scripts": {
     "build": "tsc",
+    "prepare": "pnpm run build",
     "prepublishOnly": "pnpm run build",
     "test": "playwright test",
     "test:ui": "playwright test --ui",

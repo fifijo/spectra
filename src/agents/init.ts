@@ -99,6 +99,22 @@ export function scaffold(projectRoot: string): void {
     fs.copyFileSync(mcpSource, mcpDest);
   }
 
+  // Copy the seed spec if not present: the gate docs ask the user to run it.
+  const seedSource = path.join(TEMPLATE_DIR, 'tests', 'seed.spec.ts');
+  const seedDest = path.join(projectRoot, 'tests', 'seed.spec.ts');
+  if (fs.existsSync(seedSource) && !fs.existsSync(seedDest)) {
+    fs.mkdirSync(path.dirname(seedDest), { recursive: true });
+    fs.copyFileSync(seedSource, seedDest);
+  }
+
+  // Copy the CI workflow if not present: it runs the generated suite in GitHub Actions.
+  const workflowSource = path.join(TEMPLATE_DIR, '.github', 'workflows', 'test.yml');
+  const workflowDest = path.join(projectRoot, '.github', 'workflows', 'test.yml');
+  if (fs.existsSync(workflowSource) && !fs.existsSync(workflowDest)) {
+    fs.mkdirSync(path.dirname(workflowDest), { recursive: true });
+    fs.copyFileSync(workflowSource, workflowDest);
+  }
+
   logger.success('Project scaffolded successfully.');
 }
 

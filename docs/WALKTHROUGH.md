@@ -158,6 +158,7 @@ Creates:
 - Playwright + Chromium
 - 3 agents (Planner, Generator, Healer)
 - MCP configuration
+- Seed spec (`tests/seed.spec.ts`, created by `spectra --init`)
 - `spectra` CLI (via `npx spectra`)
 
 ### Option B: Install from Git
@@ -235,7 +236,7 @@ npx spectra --batch scopes-batch.json
 npx playwright test
 
 # Run seed spec to verify environment
-npx playwright test tests/seed.spec.ts
+npx playwright test tests/seed.spec.ts  # scaffolded by --init
 
 # View report
 npx playwright show-report .spectra/output/reports
@@ -253,6 +254,9 @@ npx playwright test --grep @smoke         # Only smoke tests
 npx playwright test --grep-invert @slow   # Skip slow tests
 ```
 
+`spectra --init` creates `tests/seed.spec.ts` — it checks that the target URL
+answers and that the page has a title.
+
 ---
 
 ## Commands Reference
@@ -268,7 +272,7 @@ npx playwright test --grep-invert @slow   # Skip slow tests
 | `npx spectra -u URL --debug` | Enable debug output |
 | `npx spectra -b FILE.json` | Run scopes from JSON config |
 | `npx playwright test` | Run all tests |
-| `npx playwright test tests/seed.spec.ts` | Run seed spec only |
+| `npx playwright test tests/seed.spec.ts` | Run seed spec only (created by `spectra --init`) |
 | `npx playwright test --headed` | Run with visible browser |
 | `npx playwright test --ui` | Run with Playwright UI |
 | `npx playwright test --grep @tag` | Filter by tag |

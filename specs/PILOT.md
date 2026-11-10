@@ -10,7 +10,8 @@ One real story flows through every phase: Plan → Generate → CI → Close.
 ### Steps
 
 1. **Pick a story** with clear AC, a working preview URL, and at least 3 acceptance criteria.
-2. **Run seed**: `npx playwright test tests/seed.spec.ts` — must pass.
+2. **Run seed**: `npx playwright test tests/seed.spec.ts` (from `spectra --init`) — must pass.
+   - The seed spec is created by `spectra --init` and checks that the target URL answers and that the page has a title.
 3. **Planner**: Run the Planner agent against the preview URL.
    - Output: `specs/<ISSUE>-<slug>.md`
    - Review against the Planner Gate checklist (`specs/PLANNER-GATE.md`).

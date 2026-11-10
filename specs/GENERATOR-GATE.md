@@ -7,9 +7,12 @@ Review rules applied to Generator output **before** tests are merged.
 | Input | Source | Required |
 |-------|--------|----------|
 | Approved plan | `specs/<ISSUE>-<slug>.md` | Yes |
-| Seed spec | `tests/seed.spec.ts` | Yes |
+| Seed spec | `tests/seed.spec.ts` (from `spectra --init`) | Yes |
 | Existing page objects | `pages/` | If any |
 | Existing fixtures | `fixtures/pages.ts` | If any |
+
+The seed spec is created by `spectra --init` and checks that the target URL
+answers and that the page has a title.
 
 ## Assertion rules
 

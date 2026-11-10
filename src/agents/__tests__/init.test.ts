@@ -39,6 +39,8 @@ function setupTemplates(templateRoot: string): void {
   const fixturesDir = path.join(templateRoot, 'fixtures');
   const configDir = path.join(templateRoot, 'config');
   const cursorDir = path.join(templateRoot, 'cursor');
+  const testsDir = path.join(templateRoot, 'tests');
+  const workflowDir = path.join(templateRoot, '.github', 'workflows');
 
   for (const d of [
     plannerDir,
@@ -49,6 +51,8 @@ function setupTemplates(templateRoot: string): void {
     fixturesDir,
     configDir,
     cursorDir,
+    testsDir,
+    workflowDir,
   ]) {
     fs.mkdirSync(d, { recursive: true });
   }
@@ -61,6 +65,8 @@ function setupTemplates(templateRoot: string): void {
   fs.writeFileSync(path.join(fixturesDir, 'pages.ts'), 'export const pages = {};', 'utf-8');
   fs.writeFileSync(path.join(configDir, 'playwright.config.ts'), '// config', 'utf-8');
   fs.writeFileSync(path.join(cursorDir, 'mcp.json'), '{}', 'utf-8');
+  fs.writeFileSync(path.join(testsDir, 'seed.spec.ts'), '// seed', 'utf-8');
+  fs.writeFileSync(path.join(workflowDir, 'test.yml'), 'name: test', 'utf-8');
 }
 
 describe('initAgents', () => {
@@ -313,5 +319,47 @@ describe('scaffold', () => {
     scaffold(projectRoot);
 
     expect(fs.existsSync(path.join(projectRoot, '.cursor', 'mcp.json'))).toBe(true);
+  });
+
+  it('copies a seed spec when the project has none', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+
+    scaffold(projectRoot);
+
+    expect(fs.existsSync(path.join(projectRoot, 'tests', 'seed.spec.ts'))).toBe(true);
+  });
+
+  it('does not overwrite an existing seed spec', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+    const seedDir = path.join(projectRoot, 'tests');
+    fs.mkdirSync(seedDir, { recursive: true });
+    fs.writeFileSync(path.join(seedDir, 'seed.spec.ts'), 'mine', 'utf-8');
+
+    scaffold(projectRoot);
+
+    expect(fs.readFileSync(path.join(seedDir, 'seed.spec.ts'), 'utf-8')).toBe('mine');
+  });
+
+  it('copies the CI workflow when the project has none', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+
+    scaffold(projectRoot);
+
+    expect(fs.existsSync(path.join(projectRoot, '.github', 'workflows', 'test.yml'))).toBe(true);
+  });
+
+  it('does not overwrite an existing CI workflow', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+    const workflowDir = path.join(projectRoot, '.github', 'workflows');
+    fs.mkdirSync(workflowDir, { recursive: true });
+    fs.writeFileSync(path.join(workflowDir, 'test.yml'), 'mine', 'utf-8');
+
+    scaffold(projectRoot);
+
+    expect(fs.readFileSync(path.join(workflowDir, 'test.yml'), 'utf-8')).toBe('mine');
   });
 });
