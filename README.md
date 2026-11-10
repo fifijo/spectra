@@ -709,8 +709,8 @@ Spectra includes an optional GitHub Actions workflow for running tests in CI.
 The workflow file is at `.github/workflows/test.yml`. It will:
 
 1. Install dependencies and Playwright browsers
-2. Start your application
-3. Run all Playwright tests
+2. Install your application's dependencies
+3. Run all Playwright tests (Playwright starts your app from `playwright.config.ts`)
 4. Upload test reports as artifacts
 
 ### Configuration
@@ -718,11 +718,15 @@ The workflow file is at `.github/workflows/test.yml`. It will:
 Edit `.github/workflows/test.yml` to match your application:
 
 ```yaml
-# Update the "Start application" section:
-- name: Start application
+# Update the "UPDATE THIS SECTION" block:
+- name: Install your-app dependencies
   working-directory: your-app-directory
-  run: npm start &
+  run: pnpm install
 ```
+
+Your app is started by the `webServer` block in `playwright.config.ts` — point
+that block at your app, and keep `SPECTRA_URL` in the workflow in step with
+its `baseURL`.
 
 ### Environment Variables in CI
 

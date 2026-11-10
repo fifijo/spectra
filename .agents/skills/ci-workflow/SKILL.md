@@ -43,10 +43,11 @@ Spectra uses **GitHub Actions** for CI. The workflow file is `.github/workflows/
 
 ## Modifying CI
 When updating the workflow:
-- The "Start application" section is the main area to customize for different target apps
+- The "# UPDATE THIS SECTION" block is the main area to customize for different target apps
+- The app is started by the `webServer` block in `playwright.config.ts`, not by a workflow step
 - Unit tests run **before** browser installation to fail fast on code issues
 - The dummy-test-app must be kept working for CI to pass
-- The app health check uses `curl -s http://localhost:5173` with a 30-second timeout
+- Playwright waits for `http://localhost:5173` before the first test
 
 ## Running CI Checks Locally
 To replicate what CI does:
@@ -54,10 +55,11 @@ To replicate what CI does:
 pnpm install
 pnpm test:unit
 pnpm exec playwright install --with-deps chromium
-cd dummy-test-app && pnpm install && pnpm dev &
-# Wait for app to be ready
+pnpm --dir dummy-test-app install
 pnpm test
 ```
+Playwright starts the dummy app itself from the `webServer` block in
+`playwright.config.ts` — no manual server start is needed.
 
 ## Devin Secrets Needed
 None required. CI runs without any secrets or tokens for testing.

@@ -36,8 +36,9 @@ This runs `changeset version`, which:
 ```bash
 pnpm run release
 ```
-This runs `pnpm run build && changeset publish`, which:
-- Builds the project (`tsc`)
+This runs the quality gate (`pnpm run check`, `pnpm run typecheck`,
+`pnpm run typecheck:test`, `pnpm run test:unit`), then `pnpm run build`, then
+`changeset publish`, which:
 - Publishes to npm registry
 
 ## Semver Rules
