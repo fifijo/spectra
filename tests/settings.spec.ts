@@ -13,7 +13,10 @@ test.describe('Settings', { tag: ['@e2e'] }, () => {
 
     await settingsPage.openNotificationsTab();
     await expect(settingsPage.notificationsCard).toBeVisible();
-    await settingsPage.page.getByTestId('email-notifications-switch').click();
+    const emailSwitch = settingsPage.page.getByTestId('email-notifications-switch');
+    await expect(emailSwitch).toBeChecked();
+    await emailSwitch.click();
+    await expect(emailSwitch).not.toBeChecked();
 
     await settingsPage.openAppearanceTab();
     await expect(settingsPage.appearanceCard).toBeVisible();

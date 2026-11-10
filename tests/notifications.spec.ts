@@ -9,7 +9,7 @@ test.describe('Notifications', { tag: ['@e2e'] }, () => {
 
     await expect(notificationsPage.markAllReadButton).toBeVisible();
     await notificationsPage.markReadButton(1).click();
-    await expect(notificationsPage.notificationCard(1)).toContainText('Order Shipped');
+    await expect(notificationsPage.markReadButton(1)).toHaveCount(0);
 
     await notificationsPage.markAllReadButton.click();
     await expect(notificationsPage.markAllReadButton).toHaveCount(0);
@@ -21,9 +21,25 @@ test.describe('Notifications', { tag: ['@e2e'] }, () => {
 
     await expect(notificationsPage.page.getByText('No notifications')).toBeVisible();
 
-    await notificationsPage.page.getByTestId('email-notifications-toggle').click();
-    await notificationsPage.page.getByTestId('push-notifications-toggle').click();
-    await notificationsPage.page.getByTestId('orders-notifications-toggle').click();
-    await notificationsPage.page.getByTestId('marketing-notifications-toggle').click();
+    const emailToggle = notificationsPage.settingsToggle('email');
+    const pushToggle = notificationsPage.settingsToggle('push');
+    const ordersToggle = notificationsPage.settingsToggle('orders');
+    const marketingToggle = notificationsPage.settingsToggle('marketing');
+
+    await expect(emailToggle).toBeChecked();
+    await emailToggle.click();
+    await expect(emailToggle).not.toBeChecked();
+
+    await expect(pushToggle).toBeChecked();
+    await pushToggle.click();
+    await expect(pushToggle).not.toBeChecked();
+
+    await expect(ordersToggle).toBeChecked();
+    await ordersToggle.click();
+    await expect(ordersToggle).not.toBeChecked();
+
+    await expect(marketingToggle).not.toBeChecked();
+    await marketingToggle.click();
+    await expect(marketingToggle).toBeChecked();
   });
 });

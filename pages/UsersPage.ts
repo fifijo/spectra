@@ -4,6 +4,7 @@ export class UsersPage {
   readonly page: Page;
   readonly heading: Locator;
   readonly usersToolbar: Locator;
+  readonly usersTableCard: Locator;
   readonly searchInput: Locator;
   readonly roleFilterSelect: Locator;
   readonly statusFilterSelect: Locator;
@@ -17,6 +18,7 @@ export class UsersPage {
     this.page = page;
     this.heading = page.getByRole('heading', { name: 'Users' });
     this.usersToolbar = page.getByTestId('users-toolbar');
+    this.usersTableCard = page.getByTestId('users-table-card');
     this.searchInput = page.getByTestId('search-users-input');
     this.roleFilterSelect = page.getByTestId('role-filter-select');
     this.statusFilterSelect = page.getByTestId('status-filter-select');
@@ -33,6 +35,16 @@ export class UsersPage {
 
   userRow(userId: number): Locator {
     return this.page.getByTestId(`user-row-${userId}`);
+  }
+
+  /** Every user row rendered on the current page. */
+  tableRows(): Locator {
+    return this.usersTableCard.locator('tbody tr');
+  }
+
+  /** The user row at a 1-based position on the current page (not keyed by user id). */
+  tableRow(position: number): Locator {
+    return this.tableRows().nth(position - 1);
   }
 
   selectUserCheckbox(userId: number): Locator {

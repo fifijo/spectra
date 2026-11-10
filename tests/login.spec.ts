@@ -14,9 +14,6 @@ test.describe('Login', { tag: ['@e2e'] }, () => {
   test('rejects invalid email format', async ({ loginPage }) => {
     await loginPage.emailInput.fill('notanemail');
     await loginPage.passwordInput.fill('password123');
-    await loginPage.emailInput.evaluate((el: HTMLInputElement) => {
-      el.type = 'text';
-    });
     await loginPage.loginSubmit.click();
     await expect(loginPage.emailError).toHaveText('Please enter a valid email');
   });

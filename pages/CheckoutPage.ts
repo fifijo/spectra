@@ -33,6 +33,10 @@ export class CheckoutPage {
     return this.page.getByTestId(`step-${step}`);
   }
 
+  stepCard(step: 'address' | 'payment' | 'confirm'): Locator {
+    return this.page.getByTestId(`${step}-card`);
+  }
+
   async fillAddressMinimal(): Promise<void> {
     await this.page.getByTestId('first-name-input').fill('Test');
     await this.page.getByTestId('last-name-input').fill('User');

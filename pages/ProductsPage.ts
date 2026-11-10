@@ -7,6 +7,7 @@ export class ProductsPage {
   readonly searchInput: Locator;
   readonly categorySelect: Locator;
   readonly priceSlider: Locator;
+  readonly priceRangeLabel: Locator;
   readonly productsGrid: Locator;
   readonly filtersCard: Locator;
 
@@ -17,6 +18,7 @@ export class ProductsPage {
     this.searchInput = page.getByTestId('search-input');
     this.categorySelect = page.getByTestId('category-select');
     this.priceSlider = page.getByTestId('price-slider');
+    this.priceRangeLabel = page.getByText(/Price Range: \$/);
     this.productsGrid = page.getByTestId('products-grid');
     this.filtersCard = page.getByTestId('filters-card');
   }
@@ -38,12 +40,10 @@ export class ProductsPage {
     await this.page.getByRole('option', { name }).click();
   }
 
-  /** Nudge price range via the slider thumb (dummy app uses a single Radix thumb for [min,max]). */
-  async nudgePriceSliderDown(): Promise<void> {
-    const thumb = this.priceSlider.getByRole('slider');
-    await thumb.focus();
-    await thumb.press('ArrowLeft');
-    await thumb.press('ArrowLeft');
-    await thumb.press('ArrowLeft');
+  /** Lower the maximum of the price range by one step. */
+  async lowerPriceCeiling(): Promise<void> {
+    const thumbs = this.priceSlider.getByRole('slider');
+    await thumbs.nth(1).focus();
+    await thumbs.nth(1).press('ArrowLeft');
   }
 }

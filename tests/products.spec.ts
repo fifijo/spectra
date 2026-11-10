@@ -14,7 +14,8 @@ test.describe('Products', { tag: ['@e2e'] }, () => {
     await productsPage.selectCategory('Electronics');
     await expect(productsPage.productsGrid.getByTestId(/product-card-/)).toHaveCount(3);
 
-    await productsPage.nudgePriceSliderDown();
+    await productsPage.lowerPriceCeiling();
+    await expect(productsPage.priceRangeLabel).toHaveText('Price Range: $0 - $290');
     await productsPage.addToCartButton(1).click();
     await expect(productsPage.cartButton).toContainText('Cart (1)');
     await expect(productsPage.addToCartButton(1)).toBeDisabled();

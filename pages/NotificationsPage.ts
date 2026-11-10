@@ -30,4 +30,8 @@ export class NotificationsPage {
   dismissButton(id: number): Locator {
     return this.page.getByTestId(`dismiss-${id}`);
   }
+
+  settingsToggle(name: 'email' | 'push' | 'orders' | 'marketing'): Locator {
+    return this.page.getByTestId(`${name}-notifications-toggle`);
+  }
 }
