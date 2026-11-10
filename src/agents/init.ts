@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { TEMPLATE_DIR } from '../utils/constants.js';
+import { PACKAGE_ROOT, TEMPLATE_DIR } from '../utils/constants.js';
 import { PROJECT_DIRS } from '../utils/layout.js';
 import { logger } from '../utils/logger.js';
 
@@ -57,12 +57,34 @@ export function scaffold(projectRoot: string): void {
     installTemplates(docsSource, docsDest);
   }
 
+  // Copy the gate documentation into specs/
+  const specsSource = path.join(PACKAGE_ROOT, 'specs');
+  const specsDest = path.join(projectRoot, 'specs');
+  if (fs.existsSync(specsSource)) {
+    installTemplates(specsSource, specsDest);
+  }
+
   // Copy fixture template if not present
   const fixtureSource = path.join(TEMPLATE_DIR, 'fixtures', 'pages.ts');
   const fixtureDest = path.join(projectRoot, 'fixtures', 'pages.ts');
   if (fs.existsSync(fixtureSource) && !fs.existsSync(fixtureDest)) {
     fs.mkdirSync(path.dirname(fixtureDest), { recursive: true });
     fs.copyFileSync(fixtureSource, fixtureDest);
+  }
+
+  // Copy the Playwright config if not present: the Healer runs the tests with it.
+  const configSource = path.join(TEMPLATE_DIR, 'config', 'playwright.config.ts');
+  const configDest = path.join(projectRoot, 'playwright.config.ts');
+  if (fs.existsSync(configSource) && !fs.existsSync(configDest)) {
+    fs.copyFileSync(configSource, configDest);
+  }
+
+  // Copy the MCP config if not present: the Agents explore with Playwright MCP.
+  const mcpSource = path.join(TEMPLATE_DIR, 'cursor', 'mcp.json');
+  const mcpDest = path.join(projectRoot, '.cursor', 'mcp.json');
+  if (fs.existsSync(mcpSource) && !fs.existsSync(mcpDest)) {
+    fs.mkdirSync(path.dirname(mcpDest), { recursive: true });
+    fs.copyFileSync(mcpSource, mcpDest);
   }
 
   logger.success('Project scaffolded successfully.');

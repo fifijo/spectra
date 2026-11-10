@@ -20,7 +20,6 @@
     "templates",
     "specs",
     "docs",
-    "playwright.config.ts",
     "LICENSE",
     "README.md"
   ],

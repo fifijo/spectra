@@ -8,6 +8,7 @@ import { initAgents, scaffold } from '../init.js';
 // We need to mock TEMPLATE_DIR to point to our test fixtures
 vi.mock('../../utils/constants.js', () => ({
   TEMPLATE_DIR: '/tmp/spectra-test-templates',
+  PACKAGE_ROOT: '/tmp/spectra-test-package',
 }));
 
 vi.mock('../../utils/logger.js', () => ({
@@ -35,8 +36,19 @@ function setupTemplates(templateRoot: string): void {
   const sharedDir = path.join(agentsDir, 'shared');
   const docsDir = path.join(templateRoot, 'docs');
   const fixturesDir = path.join(templateRoot, 'fixtures');
+  const configDir = path.join(templateRoot, 'config');
+  const cursorDir = path.join(templateRoot, 'cursor');
 
-  for (const d of [plannerDir, generatorDir, healerDir, sharedDir, docsDir, fixturesDir]) {
+  for (const d of [
+    plannerDir,
+    generatorDir,
+    healerDir,
+    sharedDir,
+    docsDir,
+    fixturesDir,
+    configDir,
+    cursorDir,
+  ]) {
     fs.mkdirSync(d, { recursive: true });
   }
 
@@ -46,6 +58,8 @@ function setupTemplates(templateRoot: string): void {
   fs.writeFileSync(path.join(sharedDir, 'config.md'), '# Shared Config', 'utf-8');
   fs.writeFileSync(path.join(docsDir, 'SCOPE-template.md'), '# Scope Template', 'utf-8');
   fs.writeFileSync(path.join(fixturesDir, 'pages.ts'), 'export const pages = {};', 'utf-8');
+  fs.writeFileSync(path.join(configDir, 'playwright.config.ts'), '// config', 'utf-8');
+  fs.writeFileSync(path.join(cursorDir, 'mcp.json'), '{}', 'utf-8');
 }
 
 describe('initAgents', () => {
@@ -213,5 +227,49 @@ describe('scaffold', () => {
 
     const content = fs.readFileSync(path.join(fixtureDir, 'pages.ts'), 'utf-8');
     expect(content).toBe('existing content');
+  });
+
+  it('copies the gate documentation into specs/', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+
+    const packageRoot = '/tmp/spectra-test-package';
+    const specsSource = path.join(packageRoot, 'specs');
+    fs.mkdirSync(specsSource, { recursive: true });
+    fs.writeFileSync(path.join(specsSource, 'PLANNER-GATE.md'), '# Planner Gate', 'utf-8');
+
+    scaffold(projectRoot);
+
+    expect(fs.existsSync(path.join(projectRoot, 'specs', 'PLANNER-GATE.md'))).toBe(true);
+
+    fs.rmSync(packageRoot, { recursive: true, force: true });
+  });
+
+  it('copies a playwright config when the project has none', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+
+    scaffold(projectRoot);
+
+    expect(fs.existsSync(path.join(projectRoot, 'playwright.config.ts'))).toBe(true);
+  });
+
+  it('does not overwrite an existing playwright config', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+    fs.writeFileSync(path.join(projectRoot, 'playwright.config.ts'), 'mine', 'utf-8');
+
+    scaffold(projectRoot);
+
+    expect(fs.readFileSync(path.join(projectRoot, 'playwright.config.ts'), 'utf-8')).toBe('mine');
+  });
+
+  it('copies the mcp config', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+
+    scaffold(projectRoot);
+
+    expect(fs.existsSync(path.join(projectRoot, '.cursor', 'mcp.json'))).toBe(true);
   });
 });

@@ -160,6 +160,7 @@ Generates clean, maintainable code:
 pnpm add -D spectra-test-automation @playwright/test
 
 # Scaffold project structure
+# (creates playwright.config.ts, .cursor/mcp.json, specs/ gate docs, pages/, tests/, fixtures/)
 npx spectra --init
 
 # Install Playwright browsers
@@ -490,6 +491,8 @@ spectra/
 │
 ├── 📂 templates/                # Shipped with the package
 │   ├── 📂 agents/               # Agent definitions (Planner, Generator, Healer)
+│   ├── 📂 config/                # playwright.config.ts template
+│   ├── 📂 cursor/                # .cursor/mcp.json template
 │   ├── 📂 docs/                 # Scope template
 │   └── 📂 fixtures/             # Test fixture template
 │
