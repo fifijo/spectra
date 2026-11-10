@@ -53,6 +53,15 @@ function missingOutputs(agent: Agent, outputDir: string): string[] {
   return agent.outputs.filter((file) => !fs.existsSync(path.join(outputDir, file)));
 }
 
+/** The CLI flags that apply to every Scope of a batch. */
+function sharedFlags(options: SpectraOptions): string[] {
+  return [
+    options.page ? `page ${options.page}` : '',
+    options.scope ? `feature "${options.scope}"` : '',
+    options.file ? `file ${options.file}` : '',
+  ].filter(Boolean);
+}
+
 /** A folder name for a Scope: readable, and unique because it carries the Scope's number. */
 function slugify(label: string): string {
   const slug = label
@@ -119,6 +128,13 @@ export async function run(options: SpectraOptions = {}): Promise<boolean> {
 
     // The batch starts with empty results; every scope keeps its own, so a scope cannot delete the ones before it.
     clean(path.join(cwd, DEFAULT_OUTPUT_DIR), OUTPUT_ARTEFACTS);
+    // The scope folders of an earlier batch are copies, so this run starts without them.
+    fs.rmSync(path.join(cwd, DEFAULT_OUTPUT_DIR, 'scopes'), { recursive: true, force: true });
+
+    const shared = sharedFlags(options);
+    if (shared.length > 0) {
+      logger.info(`Applied to every scope: ${shared.join(', ')}`);
+    }
 
     let failed = 0;
     const results: string[] = [];
@@ -129,9 +145,9 @@ export async function run(options: SpectraOptions = {}): Promise<boolean> {
       const ok = await runScope(
         {
           url: batchUrl,
-          page: scopeDef.page,
-          scope: scopeDef.scope,
-          file: scopeDef.file,
+          page: options.page ?? scopeDef.page,
+          scope: options.scope ?? scopeDef.scope,
+          file: options.file ?? scopeDef.file,
           manual: options.manual,
           debug: options.debug,
         },

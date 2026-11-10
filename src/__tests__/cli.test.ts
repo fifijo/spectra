@@ -333,6 +333,61 @@ describe('run', () => {
       expect(scopeCalls[1][1]).toMatchObject({ page: '/tasks', scope: 'task management' });
     });
 
+    it('applies the CLI flags to every scope of the batch', async () => {
+      const batchPath = path.join(tmpDir, 'batch.json');
+      fs.writeFileSync(
+        batchPath,
+        JSON.stringify({
+          url: 'http://localhost:5173',
+          scopes: [{ name: 'A' }, { name: 'B' }],
+        }),
+        'utf-8',
+      );
+
+      await run({ batch: 'batch.json', page: '/checkout', scope: 'payment form' });
+
+      const scopeCalls = vi.mocked(createScopeContext).mock.calls;
+      expect(scopeCalls[0][1]).toMatchObject({ page: '/checkout', scope: 'payment form' });
+      expect(scopeCalls[1][1]).toMatchObject({ page: '/checkout', scope: 'payment form' });
+    });
+
+    it('lets the CLI flag win over the batch file', async () => {
+      const batchPath = path.join(tmpDir, 'batch.json');
+      fs.writeFileSync(
+        batchPath,
+        JSON.stringify({
+          url: 'http://localhost:5173',
+          scopes: [{ name: 'A', page: '/login' }],
+        }),
+        'utf-8',
+      );
+
+      await run({ batch: 'batch.json', page: '/checkout' });
+
+      const scopeCalls = vi.mocked(createScopeContext).mock.calls;
+      expect(scopeCalls[0][1].page).toBe('/checkout');
+    });
+
+    it('removes the scope folders of an earlier batch', async () => {
+      const stale = path.join(tmpDir, '.spectra', 'output', 'scopes', '9-old');
+      fs.mkdirSync(stale, { recursive: true });
+      fs.writeFileSync(path.join(stale, 'test-plan.md'), 'old plan', 'utf-8');
+
+      const batchPath = path.join(tmpDir, 'batch.json');
+      fs.writeFileSync(
+        batchPath,
+        JSON.stringify({
+          url: 'http://localhost:5173',
+          scopes: [{ name: 'A' }],
+        }),
+        'utf-8',
+      );
+
+      await run({ batch: 'batch.json' });
+
+      expect(fs.existsSync(stale)).toBe(false);
+    });
+
     it('reports how many scopes failed', async () => {
       const batchPath = path.join(tmpDir, 'batch.json');
       fs.writeFileSync(

@@ -122,7 +122,13 @@ npx spectra --batch scopes-batch.json
 
 # Run with batch config (override URL)
 npx spectra --url http://localhost:8080 --batch scopes-batch.json
+
+# Narrow every scope of the batch
+npx spectra --batch scopes-batch.json --page /checkout --scope "payment form"
 ```
+
+`--url`, `--page`, `--scope` and `--file` apply to every Scope in the batch.
+When a Scope in the file sets the same field, the flag wins.
 
 ## Validation
 
