@@ -5,7 +5,7 @@
 #
 # Prerequisites:
 # - Your app must be buildable/runnable in CI
-# - Update the "Start application" step for your app
+# - Update the "UPDATE THIS SECTION" block below for your app
 
 name: Playwright Tests
 
@@ -47,16 +47,6 @@ jobs:
       - name: Install dummy-test-app dependencies
         working-directory: dummy-test-app
         run: pnpm install
-
-      - name: Start application
-        working-directory: dummy-test-app
-        run: pnpm dev &
-
-      - name: Wait for application
-        run: |
-          echo "Waiting for app to start..."
-          timeout 30 bash -c 'until curl -s http://localhost:5173 > /dev/null; do sleep 1; done'
-          echo "App is ready!"
       # ============================================
 
       - name: Run Playwright tests
