@@ -89,7 +89,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/fifijo/spectra.git"
+    "url": "git+https://github.com/fifijo/spectra.git"
   },
   "homepage": "https://github.com/fifijo/spectra#readme",
   "bugs": {
