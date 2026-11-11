@@ -49,7 +49,8 @@
     "check:fix": "biome check --write",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "pnpm run check && pnpm run typecheck && pnpm run typecheck:test && pnpm run test:unit && pnpm run build && changeset publish"
+    "release": "pnpm run check && pnpm run typecheck && pnpm run typecheck:test && pnpm run test:unit && pnpm run build && pnpm run publish:package",
+    "publish:package": "npm view $(node -p \"require('./package.json').name\")@$(node -p \"require('./package.json').version\") version >/dev/null 2>&1 || npm publish --provenance"
   },
   "keywords": [
     "playwright",

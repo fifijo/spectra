@@ -36,6 +36,7 @@ jobs:
 
       # Trusted publishing: npm 11.5.1 or newer exchanges the OIDC token of the
       # runner for a short-lived publish token, so no npm secret is needed.
+      # pnpm cannot publish over OIDC, so the publish itself goes through npm.
       - name: Install npm for trusted publishing
         run: npm install -g npm@latest
 
@@ -49,7 +50,6 @@ jobs:
           commit: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_CONFIG_PROVENANCE: true
 
       - name: Explain a failed publish
         if: failure()

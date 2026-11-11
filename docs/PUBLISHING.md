@@ -10,6 +10,11 @@ The package `spectra-test-automation` on npmjs.com names one trusted publisher:
 GitHub Actions, repository `fifijo/spectra`, workflow file `release.yml`. The
 workflow needs `id-token: write` and npm 11.5.1 or newer.
 
+The publish itself runs through npm: `changeset publish` would publish with
+pnpm, and pnpm cannot speak OIDC. The `publish:package` script asks the
+registry first, so a version that is already on npm is skipped instead of
+failing the job.
+
 Every push to `main` runs the workflow. With a changeset pending it opens the
 "chore: version packages" pull request; it publishes the version when that
 pull request is merged.
