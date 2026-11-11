@@ -27,7 +27,6 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -35,14 +34,10 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      - name: Check NPM_TOKEN
-        run: |
-          if [ -z "$NPM_TOKEN" ]; then
-            echo "::error::NPM_TOKEN secret is not set. Please add an npm access token as a repository secret named NPM_TOKEN. You can create one at https://www.npmjs.com/settings/YOUR_USERNAME/tokens"
-            exit 1
-          fi
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # Trusted publishing: npm 11.5.1 or newer exchanges the OIDC token of the
+      # runner for a short-lived publish token, so no npm secret is needed.
+      - name: Install npm for trusted publishing
+        run: npm install -g npm@latest
 
       - name: Create Release Pull Request or Publish
         id: changesets
@@ -54,12 +49,11 @@ jobs:
           commit: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
 
       - name: Explain a failed publish
         if: failure()
         run: |
           echo "::error::The publish failed after the version bump was merged."
           echo "::error::The changeset was consumed by 'changeset version'."
-          echo "::error::To publish this version again, run 'pnpm run changeset publish' locally with NPM_TOKEN set."
+          echo "::error::To publish this version again, run 'pnpm run changeset publish' locally."

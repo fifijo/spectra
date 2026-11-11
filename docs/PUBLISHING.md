@@ -1,5 +1,19 @@
 # Publishing to npm
 
+## Release from CI
+
+The release workflow publishes with npm's **trusted publishing**: GitHub gives
+the runner an OIDC token and npm exchanges it for a short-lived publish token,
+so no npm secret lives in the repository.
+
+The package `spectra-test-automation` on npmjs.com names one trusted publisher:
+GitHub Actions, repository `fifijo/spectra`, workflow file `release.yml`. The
+workflow needs `id-token: write` and npm 11.5.1 or newer.
+
+Every push to `main` runs the workflow. With a changeset pending it opens the
+"chore: version packages" pull request; it publishes the version when that
+pull request is merged.
+
 ## Build and publish
 
 ```bash
