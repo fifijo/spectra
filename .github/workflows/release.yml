@@ -50,10 +50,13 @@ jobs:
           commit: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # npm only says "need auth" for a rejected token exchange. The verbose
+          # log says why the registry refused it.
+          NPM_CONFIG_LOGLEVEL: verbose
 
       - name: Explain a failed publish
         if: failure()
         run: |
           echo "::error::The publish failed after the version bump was merged."
           echo "::error::The changeset was consumed by 'changeset version'."
-          echo "::error::To publish this version again, run 'pnpm run changeset publish' locally."
+          echo "::error::To publish this version again, run 'pnpm run release' locally."
