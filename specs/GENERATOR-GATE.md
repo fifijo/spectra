@@ -6,7 +6,7 @@ Review rules applied to Generator output **before** tests are merged.
 
 | Input | Source | Required |
 |-------|--------|----------|
-| Approved plan | `specs/<ISSUE>-<slug>.md` | Yes |
+| Approved plan | `.spectra/output/plans/test-plan.md` | Yes |
 | Seed spec | `tests/seed.spec.ts` (from `spectra --init`) | Yes |
 | Existing page objects | `pages/` | If any |
 | Existing fixtures | `fixtures/pages.ts` | If any |
@@ -79,7 +79,7 @@ skips a required one.
 
 1. Generator creates files in a feature branch.
 2. Open PR with:
-   - Link to the approved plan (`specs/<ISSUE>-<slug>.md`).
+   - Link to the approved plan (`.spectra/output/plans/test-plan.md`).
    - List of generated files.
    - Screenshot or log showing Planner's live-UI verification (if available).
 3. Reviewer checks:

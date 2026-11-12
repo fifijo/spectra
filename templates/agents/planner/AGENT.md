@@ -271,5 +271,12 @@ Create `.spectra/output/plans/test-plan.md` with this structure:
 - **Expected Result**: User redirected to login; return URL preserved
 ```
 
+## Review Rules
+
+The output of this Agent is reviewed against `specs/PLANNER-GATE.md`:
+every user flow has a measurable outcome, the page inventory covers every
+route you visited, the gaps are flagged, and each scenario has an expected
+result.
+
 ## Completion Signal
 When done, create file: `.spectra/output/plans/.complete`

@@ -11,9 +11,13 @@ This directory holds **human-readable Markdown plans** and **gate documentation*
 | `CI-HEALER-POLICY.md` | CI trace/report config, Healer retry limits, failure triage categories |
 | `PILOT.md` | Verification pilot: one full story + two controlled failure scenarios |
 
-## Naming convention for plans
+## Where the Plan lives
 
-When the Planner produces a plan for a specific story, save it as:
+A Spectrum run writes its Plan to `.spectra/output/plans/test-plan.md`. That
+is the file the Generator reads.
+
+To keep an approved Plan next to the project's other documents, copy it into
+`specs/` and name it:
 
 ```
 specs/<ISSUE-KEY>-<slug>.md
@@ -23,11 +27,14 @@ Examples:
 - `specs/PROJ-123-checkout-flow.md`
 - `specs/PROJ-456-user-registration.md`
 
+The copy is a human artefact; a run always reads the Plan from
+`.spectra/output/plans/test-plan.md`.
+
 ## Workflow
 
 ```
 Story with AC
-  → Planner produces specs/<ISSUE>-<slug>.md
+  → Planner produces .spectra/output/plans/test-plan.md
   → Review against PLANNER-GATE.md
   → Generator produces tests
   → Review against GENERATOR-GATE.md

@@ -25,7 +25,7 @@ answers and that the page has a title.
 
 ## Plan review checklist
 
-After the Planner produces `specs/<ISSUE>-<slug>.md`:
+After the Planner produces `.spectra/output/plans/test-plan.md`:
 
 - [ ] **Coverage** - Every AC bullet has at least one matching test scenario.
 - [ ] **Measurable outcomes** - Each scenario has an explicit expected result (not just "verify it works").
@@ -33,7 +33,8 @@ After the Planner produces `specs/<ISSUE>-<slug>.md`:
 - [ ] **Matches live UI** - Steps reference elements that exist on the current preview (validated by Planner snapshot).
 - [ ] **Discrepancies documented** - If the UI differs from the ticket, the plan notes the discrepancy and links to the product issue.
 - [ ] **Gaps flagged** - Unreachable scenarios (e.g., missing role, disabled flag) are listed as blocked with a reason.
-- [ ] **Naming convention** - File follows `specs/<ISSUE-KEY>-<slug>.md` (e.g., `specs/PROJ-123-checkout-flow.md`).
+- [ ] **Structure** - The Plan has the sections the Planner template requires: Application Overview, the per-page sections (Route, Elements, Actions, Empty State, Validations), User Flows, and the numbered Test Scenarios with their Expected Result.
+- [ ] **Approved Plan kept** (optional) - If you copy the approved Plan into the project, name it `specs/<ISSUE-KEY>-<slug>.md` (e.g. `specs/PROJ-123-checkout-flow.md`).
 
 ## Decision
 

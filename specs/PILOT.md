@@ -13,7 +13,7 @@ One real story flows through every phase: Plan → Generate → CI → Close.
 2. **Run seed**: `npx playwright test tests/seed.spec.ts` (from `spectra --init`) — must pass.
    - The seed spec is created by `spectra --init` and checks that the target URL answers and that the page has a title.
 3. **Planner**: Run the Planner agent against the preview URL.
-   - Output: `specs/<ISSUE>-<slug>.md`
+   - Output: `.spectra/output/plans/test-plan.md`
    - Review against the Planner Gate checklist (`specs/PLANNER-GATE.md`).
 4. **Generator**: Run the Generator agent with the approved plan.
    - Output: `pages/*.ts`, `tests/*.spec.ts`, updated `fixtures/pages.ts`
