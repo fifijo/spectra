@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { PassThrough } from 'node:stream';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AGENTS } from '../../agents/catalogue.js';
 import { takeSnapshot } from '../../agents/verify.js';
@@ -304,5 +304,100 @@ describe('the MCP server', () => {
     expect(written).toHaveLength(1);
     const response = JSON.parse(written[0]) as { result: { tools: unknown[] } };
     expect(response.result.tools).toHaveLength(3);
+  });
+
+  it('answers a request that arrives in two chunks', () => {
+    const { cwd, state } = makeProject();
+    tmpDirs.push(cwd);
+    process.chdir(cwd);
+
+    const input = new PassThrough();
+    const output = new PassThrough();
+    const written: string[] = [];
+    output.on('data', (chunk: Buffer) => written.push(chunk.toString('utf-8')));
+
+    serveMcp(state, input, output);
+    const line = JSON.stringify({ jsonrpc: '2.0', id: 12, method: 'tools/list' });
+    input.write(line.slice(0, 10));
+    expect(written).toHaveLength(0);
+
+    input.write(`${line.slice(10)}\n`);
+
+    expect(written).toHaveLength(1);
+    expect((JSON.parse(written[0]) as { id: number }).id).toBe(12);
+  });
+
+  it('answers two requests that arrive in one chunk', () => {
+    const { cwd, state } = makeProject();
+    tmpDirs.push(cwd);
+    process.chdir(cwd);
+
+    const input = new PassThrough();
+    const output = new PassThrough();
+    const written: string[] = [];
+    output.on('data', (chunk: Buffer) => written.push(chunk.toString('utf-8')));
+
+    serveMcp(state, input, output);
+    input.write(
+      `${JSON.stringify({ jsonrpc: '2.0', id: 13, method: 'tools/list' })}\n` +
+        `${JSON.stringify({ jsonrpc: '2.0', id: 14, method: 'tools/list' })}\n`,
+    );
+
+    const ids = written.map((line) => (JSON.parse(line) as { id: number }).id);
+    expect(ids).toEqual([13, 14]);
+  });
+
+  it('answers a request that ends without a newline when the host closes stdin', async () => {
+    const { cwd, state } = makeProject();
+    tmpDirs.push(cwd);
+    process.chdir(cwd);
+
+    const input = new PassThrough();
+    const output = new PassThrough();
+    const written: string[] = [];
+    output.on('data', (chunk: Buffer) => written.push(chunk.toString('utf-8')));
+
+    serveMcp(state, input, output);
+    input.end(JSON.stringify({ jsonrpc: '2.0', id: 15, method: 'tools/list' }));
+
+    await vi.waitFor(() => expect(written).toHaveLength(1));
+    expect((JSON.parse(written[0]) as { id: number }).id).toBe(15);
+  });
+
+  it('answers a line that is not JSON with a parse error', () => {
+    const { cwd, state } = makeProject();
+    tmpDirs.push(cwd);
+    process.chdir(cwd);
+
+    const input = new PassThrough();
+    const output = new PassThrough();
+    const written: string[] = [];
+    output.on('data', (chunk: Buffer) => written.push(chunk.toString('utf-8')));
+
+    serveMcp(state, input, output);
+    input.write('{not json}\n');
+
+    const response = JSON.parse(written[0]) as {
+      id: null;
+      error: { code: number; message: string };
+    };
+    expect(response.id).toBeNull();
+    expect(response.error).toEqual({ code: -32700, message: 'Parse error' });
+  });
+
+  it('writes nothing for a notification that arrives over stdio', () => {
+    const { cwd, state } = makeProject();
+    tmpDirs.push(cwd);
+    process.chdir(cwd);
+
+    const input = new PassThrough();
+    const output = new PassThrough();
+    const written: string[] = [];
+    output.on('data', (chunk: Buffer) => written.push(chunk.toString('utf-8')));
+
+    serveMcp(state, input, output);
+    input.write(`${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' })}\n`);
+
+    expect(written).toHaveLength(0);
   });
 });
