@@ -266,6 +266,30 @@ pass; `pnpm test:unit:coverage` → 92.46% statements and 82.99% branches, up
 from 91.46% and 81.26%. The Playwright suite (18 tests) was unaffected — no
 generated code, page object or config changed.
 
+### Review of 028–032 (2026-11-12)
+
+A review of the five commits found seven problems, all fixed in the two
+commits after `ae9652c`:
+
+1. `SPECTRA_MODE` (a documented environment variable) turned every `--mcp`
+   run into an error, because the new flag-conflict guard treated the
+   environment-derived mode as an explicit `--mode`. The environment variable
+   is now ignored in native mode; an explicit `--mode` still conflicts.
+2. The repository's own `.gitignore` did not ignore `specs/.templates.json`,
+   the file it now tells every user to ignore.
+3. `ensureGitignore` rewrote the user's `.gitignore` instead of appending to
+   it, so a crash between the truncate and the write could empty the file.
+   It appends now.
+4. No test pinned "only the missing lines are appended", so a regression
+   could duplicate every rule in every user's file.
+5. The CI policy said "This repository's workflow uploads:" in a file that
+   ships to users' projects; it names the scaffolded workflow now.
+6. The error for `--mcp --init` claimed `--mcp` does not use `--init`, but
+   `--mcp` scaffolds the project itself; the message says that now.
+7. Every native-mode run rewrote the user's `.gitignore`, because `scaffold()`
+   calls the ignore helper. The helper is called by `--init` only, so a run
+   leaves the user's files alone.
+
 ## Direction notes (not plans)
 
 Offered to the maintainer during the audit; none of them is a defect, and
