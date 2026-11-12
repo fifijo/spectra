@@ -265,9 +265,11 @@ npx spectra-test-automation \
   --scope "credit card payment form"
 ```
 
-The Planner focuses only on the payment form, the Generator creates
-`PaymentFormPage.ts` and `payment.spec.ts`, and the Healer runs and fixes only
-payment-related tests. Everything else on the page is ignored.
+The Planner explores only the payment form and the Generator writes tests only
+for it. The Healer is not scoped: it runs the whole suite with
+`playwright test`, and may repair any Page Object or test it finds broken —
+including tests an earlier run generated. The rest of the page is ignored while
+exploring.
 
 ### Scope File
 
