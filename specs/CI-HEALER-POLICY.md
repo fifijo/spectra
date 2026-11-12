@@ -24,8 +24,8 @@ export default defineConfig({
 
 ### Artifact upload
 
-A CI run should upload the artifacts a failure needs. This repository's
-workflow uploads:
+A CI run should upload the artifacts a failure needs. The workflow Spectra
+scaffolds uploads:
 
 | Artifact | Path | When | Retention |
 |----------|------|------|------------|
