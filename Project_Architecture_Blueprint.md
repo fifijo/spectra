@@ -3,7 +3,7 @@
 **Generated:** 2026-11-10
 **Scope:** the whole repository (`src/`, `templates/`, `specs/`, `docs/`, `tests/`, `pages/`)
 **Detected stack:** TypeScript 6 / Node.js ≥ 20 ESM, pnpm, Playwright (peer), Vitest, Biome, Changesets
-**Detected pattern:** modular monolith — a layered CLI/library core (command → orchestration → domain modules → utilities) with a file-system contract as its integration surface, plus an interchangeable external "AI runtime" (agent CLI or the host's MCP model).
+**Detected pattern:** modular monolith — a layered CLI/library core (command → application → domain modules → utilities) with a file-system contract as its integration surface, plus an interchangeable external "AI runtime" (agent CLI or the host's MCP model).
 
 This document describes the architecture **as implemented**, not as imagined. Where the code and a doc disagree, the code is quoted.
 
@@ -15,7 +15,7 @@ This document describes the architecture **as implemented**, not as imagined. Wh
 
 `package.json` describes a dual-purpose package:
 
-- **CLI** — `bin.spectra → dist/bin.js`, one command with modes `--init`, `--batch`, `--mcp`, `--manual`, `--mode`, `--debug`.
+- **CLI** — `bin.spectra → dist/bin.js`, one command with the options `--init`, `--batch`, `--mcp`, `--manual`, `--mode`, `--debug`.
 - **Library** — `main/types/exports → dist/index.js|d.ts`, exposing `run()`, `detectMode()`, `createScopeContext()`, `DEFAULT_OUTPUT_DIR`, `TEMPLATE_DIR`.
 
 It is **not** a web app. Its runtime artefacts are files in the consumer's project:
@@ -38,17 +38,17 @@ It is **not** a web app. Its runtime artefacts are files in the consumer's proje
 | `package.json` | Zero `dependencies`; only peer `@playwright/test`; dev-only build/test/lint tooling |
 | Configuration | CLI flags and env vars only (`SPECTRA_URL`, `SPECTRA_MODE`, `SPECTRA_DEBUG`, plus `SPECTRA_BROWSERS`/`SPECTRA_TAGS`/`SPECTRA_SKIP_WEBSERVER` read by `playwright.config.ts`) |
 | Persistence | The file system is the database; there is no other store |
-| Boundaries | `src/agents/catalogue.ts` is the single description of the pipeline; `src/agents/verify.ts` is the single answer to "did this Agent do its job?" |
-| Evolution markers | `docs/adr/0001..0003`, `plans/001..027` (plans, some with execution reports), `.changeset/` |
+| Boundaries | `src/agents/catalogue.ts` is the single description of the Spectrum; `src/agents/verify.ts` is the single answer to "did this Agent do its job?" |
+| Evolution markers | `docs/adr/0001..0003`, `plans/001..032` (plans, some with execution reports), `.changeset/` |
 
 ### 1.3 Architectural pattern
 
 The dominant pattern is **layered + ports-and-adapters at one seam**:
 
 1. **Entry layer** — `bin.ts`, `args.ts`, `index.ts`.
-2. **Application/orchestration layer** — `cli.ts` (`run`, `runScope`, `prepare`, `cleanRun`, `preserve`).
-3. **Domain layer** — `agents/catalogue.ts` (what the pipeline is), `agents/verify.ts` (the completion rule), `utils/batch.ts` (the Batch grammar), `utils/scope.ts` (Scope rendering).
-4. **Adapter layer** — `agents/runner.ts` (spawns one of six agent CLIs, or waits in manual mode), `mcp/server.ts` (serves the same pipeline to a host model over stdio JSON-RPC), `agents/init.ts` (template installation into the consumer project).
+2. **Application layer** — `cli.ts` (`run`, `runScope`, `prepare`, `cleanRun`, `preserve`).
+3. **Domain layer** — `agents/catalogue.ts` (what the Spectrum is), `agents/verify.ts` (the completion rule), `utils/batch.ts` (the Batch grammar), `utils/scope.ts` (Scope rendering).
+4. **Adapter layer** — `agents/runner.ts` (spawns one of five agent CLIs, or waits in manual mode), `mcp/server.ts` (serves the same Spectrum to a host model over stdio JSON-RPC), `agents/init.ts` (template installation into the consumer project).
 5. **Infrastructure utilities** — `logger.ts`, `constants.ts`, `layout.ts`, `detect-mode.ts`.
 
 The adapter seam is deliberate: `runner.ts` and `mcp/server.ts` both consume `Agent` records and both call `verify.missingOutputs`, so the automated and native modes cannot drift on what an Agent owes.
@@ -60,9 +60,9 @@ The adapter seam is deliberate: `runner.ts` and `mcp/server.ts` both consume `Ag
 ### 2.1 Guiding principles visible in the code
 
 1. **One description, many consumers.** `AGENTS` in `src/agents/catalogue.ts` drives prompts (`buildPrompt`), log names, cleanup (`cleanRun`), directory creation (`OUTPUT_DIRS`/`PROJECT_DIRS`), verification (`takeSnapshot`/`missingOutputs`), and MCP briefs. ADR 0001 records the trade-off: templates still name paths, and a test enforces agreement rather than a generator.
-2. **The run must never pass on work it did not do.** `takeSnapshot` records mtimes before the pipeline; `missingOutputs` accepts only new-or-changed files. ADR 0003 explains why "file exists" was rejected.
-3. **The file system is the pipeline's protocol.** Agents communicate through Markdown/JSON artefacts and completion-signal files, never through a shared process. That is what makes five agent CLIs, manual mode and an MCP host interchangeable.
-4. **Library-safe core.** `run()` returns `boolean` and never exits. The only `process.exit` calls are `bin.ts` on failure and `args.ts` for `--help`. `parseBatchConfig` is pure. Exceptions are caught at the orchestration boundary and turned into log lines.
+2. **The run must never pass on work it did not do.** `takeSnapshot` records the mtime and the content hash of every file the Agents write before the run starts; `missingOutputs` accepts only new-or-changed files. ADR 0003 explains why "file exists" was rejected.
+3. **The file system is the Spectrum's protocol.** Agents communicate through Markdown/JSON artefacts and completion-signal files, never through a shared process. That is what makes five agent CLIs, manual mode and an MCP host interchangeable.
+4. **Library-safe core.** `run()` returns `boolean` and never exits. The only `process.exit` calls are `bin.ts` on failure and `args.ts` for `--help`. `parseBatchConfig` is pure. Exceptions are caught at the application boundary and turned into log lines.
 5. **Trust boundary is explicit, not implicit.** Automated Agents run with full permission; the code warns when `--file` points outside the project (`warnOnUntrustedFile`) and comments the residual risk in `runner.ts`.
 6. **User edits win.** `installTemplates` tracks installed hashes in `.templates.json` and keeps a modified file, printing the new template path instead.
 7. **Lazy infrastructure.** No database, no queue, no server except a 289-line stdio JSON-RPC handler. Runtime dependency count is zero.
@@ -78,7 +78,7 @@ The adapter seam is deliberate: `runner.ts` and `mcp/server.ts` both consume `Ag
 
 ### 2.3 Hybrids and adaptations
 
-- **MCP mode is a third adapter, not a fourth Agent.** It reuses `buildPrompt`, `missingOutputs`, the catalogue and the scope file; it adds session state (`McpState.index`) and writes the completion signal itself when `spectra_done` passes verification.
+- **MCP mode is an adapter, not a fourth Agent.** It reuses `buildPrompt`, `missingOutputs`, the catalogue and the scope file; it adds session state (`McpState.index`) and writes the completion signal itself when `spectra_done` passes verification.
 - **Batch mode is a loop, not a scheduler.** No concurrency, no retries, no resume; sequential `for` with per-Scope result folders.
 - **Generated tests are checked in.** `tests/` and `pages/` at repo root are the dogfooding output against `dummy-test-app/`, and both are typechecked by `tsconfig.test.json`.
 
@@ -93,7 +93,7 @@ C4Context
   title Spectra in context
 
   Person(dev, "Developer / QA", "Points Spectra at a running app and reads the generated suite")
-  System(spectra, "Spectra", "CLI + library: orchestrates Planner, Generator, Healer")
+  System(spectra, "Spectra", "CLI + library: runs the Planner, Generator and Healer")
   System_Ext(cli, "Agent CLI", "cursor-agent, claude, codex, opencode, gemini")
   System_Ext(host, "MCP host", "Cursor, Claude Code, opencode or any MCP client")
   System_Ext(app, "Application under test", "Served over HTTP; explored through Playwright MCP")
@@ -133,7 +133,7 @@ flowchart TB
   subgraph Adapters
     runner[runner.ts<br/>spawn / waitForCompletion]
     mcp[mcp/server.ts<br/>JSON-RPC over stdio]
-    init[init.ts<br/>scaffold + template manifest]
+    init[init.ts<br/>scaffold + template manifest + ignore rules]
   end
 
   subgraph Utils
@@ -175,17 +175,17 @@ Dependency direction is mostly downward: Entry → Application → Domain/Adapte
 ```mermaid
 sequenceDiagram
   actor U as User
-  participant CLI as cli.runScope
+  participant CLI as cli.run / cli.runScope
   participant FS as File system
   participant R as runner.runAgent
   participant A as Agent CLI
   participant V as verify
 
   U->>CLI: spectra --url …
-  CLI->>FS: mkdir .spectra/output/{plans,reports,tests,test-results}
   CLI->>FS: initAgents() → .spectra/agents/**
-  CLI->>FS: cleanRun() → delete signals, artefacts, results.json, logs
+  CLI->>FS: mkdir .spectra/output/{plans,reports,tests,test-results}
   CLI->>FS: createScopeContext() → shared/current-scope.md
+  CLI->>FS: cleanRun() → delete signals, artefacts, results.json, logs
   CLI->>V: takeSnapshot(AGENTS, outputDir, cwd)
   loop each Agent in AGENTS (planner → generator → healer)
     CLI->>R: runAgent(agent, ctx)
@@ -252,7 +252,7 @@ sequenceDiagram
 
 **Extension.** Add an Agent by appending one record; prompts, cleanup, directory creation and verification follow automatically. **Caveat (deliberate, documented in the file):** `projectOutputs` is prompt-only; only `writes` folders and `outputs` files are verified. The Generator's `pages/` and `fixtures/pages.ts` are therefore *not* checked, and the Healer's edits to `tests/` are not checked either.
 
-### 4.2 Verification — `src/agents/verify.ts` (129 lines)
+### 4.2 Verification — `src/agents/verify.ts` (148 lines)
 
 **Purpose.** The single completion rule shared by both adapters.
 
@@ -264,7 +264,7 @@ sequenceDiagram
 - `countChanged` powers the summary and excludes `.d.ts`.
 - `projectPath` is the single path-presentation helper (relative to `process.cwd()`).
 
-**Known limits.** a rewrite with the same bytes in the same clock tick is invisible (annotated with `shortcut:`); the snapshot is per-run, not per-Scope, so a Batch reuses one snapshot (correct, because `cleanRun` removes artefacts between Scopes); `process.cwd()` is read at call time rather than injected.
+**Known limits.** a rewrite with the same bytes in the same clock tick is invisible (annotated with `shortcut:`); the snapshot is taken per Scope (`runScope` takes one for every Scope), so an artefact the previous Scope left behind is already in the snapshot and does not count as this Scope's work; `process.cwd()` is read at call time rather than injected.
 
 ### 4.3 Runner — `src/agents/runner.ts` (209 lines)
 
@@ -278,35 +278,37 @@ sequenceDiagram
 
 **Trust note.** The comment above the switch states the residual risk: every automated mode runs its CLI with full permission; `warnOnUntrustedFile` in `cli.ts` is the only mitigation.
 
-**Lifecycle detail.** After a successful CLI exit, `runAgent` only *warns* if the completion signal is absent; it does not throw. The orchestration layer's `missingOutputs` check is what actually fails the run.
+**Lifecycle detail.** After a successful CLI exit, `runAgent` only *warns* if the completion signal is absent; it does not throw. The application layer's `missingOutputs` check is what actually fails the run.
 
-### 4.4 Initialiser / template installer — `src/agents/init.ts` (184 lines)
+### 4.4 Initialiser / template installer — `src/agents/init.ts` (238 lines)
 
 **Purpose.** Install the shipped templates into a consumer project without destroying user edits.
 
 **Mechanisms.**
-- `scaffold` creates `PROJECT_DIRS`, installs `templates/agents` and `templates/docs`, copies the gate docs from the package's `specs/`, then `copyIfMissing` for `fixtures/pages.ts`, `playwright.config.ts`, `.cursor/mcp.json`, `.mcp.json`, `tests/seed.spec.ts`, `.github/workflows/test.yml`.
+- `scaffold` creates `PROJECT_DIRS`, installs `templates/agents`, installs the scope template (`templates/docs`) and the user guides (the package's `docs/`: `BATCH-CONFIG.md`, `CI-CD.md`, `QUICK-REFERENCE.md`, `WALKTHROUGH.md`) into the project's `docs/`, copies the gate docs from the package's `specs/`, then `copyIfMissing` for `fixtures/pages.ts`, `playwright.config.ts`, `.cursor/mcp.json`, `.mcp.json`, `tests/seed.spec.ts`, `.github/workflows/test.yml` and the `scopes-batch.json` example.
+- `ensureGitignore` appends the missing ignore rules of `PROJECT_IGNORES` (`.spectra/output/`, `.spectra/agents/`, `test-results/`, `playwright-report/`, `docs/.templates.json`, `specs/.templates.json`) to the project's `.gitignore`; a `.gitignore` the project already has is never rewritten, and a rule it already has is not added twice. `cli.ts` calls it for `--init` only.
 - `installTemplates` walks the source tree, hashes each file (`sha256`), and keeps a destination file whose current hash differs from the installed hash; it records the *new* template hash in `next[key]` so the next upgrade compares against what was actually shipped.
 - Orphan cleanup removes a destination file only if it still matches the last installed hash.
 - `insideDest` rejects manifest keys that resolve outside the destination — a path-traversal guard added by `plans/009` and covered by tests.
 
-**Manifest.** `.templates.json` inside each destination folder (`.spectra/agents/`, `docs/`, `specs/`), gitignored for `docs/` in this repo.
+**Manifest.** `.templates.json` inside each destination folder (`.spectra/agents/`, `docs/`, `specs/`), gitignored for `docs/` and `specs/` in this repo.
 
-### 4.5 CLI orchestration — `src/cli.ts` (421 lines)
+### 4.5 CLI application layer — `src/cli.ts` (449 lines)
 
 **Purpose.** The application service. It owns every side effect that is not an adapter detail.
 
 **Responsibilities, in order of `run()`:**
-1. `--mcp` → `runAsMcpServer` (stdout becomes JSON-RPC; logs move to stderr via `setLogTarget('stderr')`).
-2. `--init` → `scaffold` + next-steps text.
-3. `--batch` → resolve/validate file, resolve URL precedence (`--url` → batch `url` → `SPECTRA_URL`), delete `.spectra/output/scopes/`, `prepare()` once, warn for every scope file, then loop `runScope` with per-Scope folder `${i+1}-${slugify(label)}`.
-4. default → `prepare()` then `runScope`.
+1. Contradicting flags are refused before anything runs: `--mcp` with `--batch`, `--mode`, `--manual` or `--init`, and `--init` with `--batch`. The first branch of `run()` wins, so the other flags would be silently ignored.
+2. `--mcp` → `runAsMcpServer` (stdout becomes JSON-RPC; logs move to stderr via `setLogTarget('stderr')`).
+3. `--init` → `scaffold` + `ensureGitignore` + next-steps text.
+4. `--batch` → resolve/validate file, resolve URL precedence (`--url` → batch `url` → `SPECTRA_URL`), delete `.spectra/output/scopes/`, `prepare()` once, warn for every scope file, then loop `runScope` with per-Scope folder `${i+1}-${slugify(label)}`.
+5. default → `prepare()` then `runScope`.
 
 `runScope` does the per-run work: URL check, output-dir creation, banner, scope context, `cleanRun`, snapshot, Agent loop with break-on-failure, `preserve` after each verified Agent when batching, and summary counts.
 
-**Flag precedence.** In Batch, shared CLI flags override per-Scope fields (`options.page ?? scopeDef.page`, etc.). `--manual` beats everything and forces `manual`; otherwise `--mode` wins over auto-detection; `SPECTRA_MODE` is the CLI default in `args.ts`.
+**Flag precedence.** In Batch, shared CLI flags override per-Scope fields (`options.page ?? scopeDef.page`, etc.). `--manual` beats everything and forces `manual`; otherwise `--mode` wins over auto-detection; `SPECTRA_MODE` is the CLI default in `args.ts`, and it is ignored in native mode (`--mcp`), which has no agent CLI.
 
-**Side-effect inventory.** `mkdir`, `rm`, `copyFile`, `writeFile`, `readFile`, `spawn`, `execSync` (mode detection only), `process.cwd`, `process.exit` (`bin.ts` on failure, `args.ts` for `--help`).
+**Side-effect inventory.** `mkdir`, `rm`, `copyFile`, `writeFile`, `appendFile` (the ignore rules), `readFile`, `spawn`, `execSync` (mode detection only), `process.cwd`, `process.exit` (`bin.ts` on failure, `args.ts` for `--help`).
 
 ### 4.6 MCP adapter — `src/mcp/server.ts` (289 lines)
 
@@ -328,10 +330,10 @@ sequenceDiagram
 | Module | Role | Notable decisions |
 |---|---|---|
 | `batch.ts` | Pure parse/validate of the Batch JSON | Unknown keys are errors (a misspelled `scope` would silently widen the run); discriminated result `{ok:true}|{ok:false}`; no fs, no exit |
-| `scope.ts` | Render `.spectra/agents/shared/current-scope.md` | `oneLine()` collapses whitespace so file content cannot inject prompt structure; embedded requirements are fenced ```` ```md ````; `fullUrl` avoids double/missing slashes |
+| `scope.ts` | Render `.spectra/agents/shared/current-scope.md` | `oneLine()` collapses whitespace so file content cannot inject prompt structure; embedded requirements are fenced in a Markdown code block (four backticks); `fullUrl` avoids double/missing slashes |
 | `detect-mode.ts` | Choose the CLI mode | Explicit order `cursor-agent > claude > codex > opencode > gemini > manual`; a requested mode must be known *and* installed; `manual` needs no binary |
 | `logger.ts` | Colourised output | Lazy `isDebug()` (env set after import); `setLogTarget('stderr')` for MCP; `error` always writes to stderr |
-| `layout.ts` | Derive directories from the catalogue | `OUTPUT_DIRS` = dirs of signals/artefacts + `test-results`; `PROJECT_DIRS` adds `tests`, `specs`, `pages`, `fixtures`, agent dirs and the output dirs |
+| `layout.ts` | Derive directories from the catalogue | `OUTPUT_DIRS` = dirs of signals/artefacts + `test-results`; `PROJECT_DIRS` adds `tests`, `specs`, `pages`, `fixtures`, agent dirs and the output dirs; `PROJECT_IGNORES` lists the paths a scaffolded project must not commit |
 | `constants.ts` | Package paths | `PACKAGE_ROOT` resolved from `import.meta.url` two levels above `dist/utils/`; `DEFAULT_OUTPUT_DIR = '.spectra/output'` |
 
 ---
@@ -353,7 +355,7 @@ sequenceDiagram
 - **Adapters stay siblings except one reuse.** `mcp/server.ts` imports `buildPrompt` from `runner.ts` so the brief and the CLI prompt cannot diverge; otherwise no adapter imports another.
 - **Domain code has few side effects.** `parseBatchConfig` is pure; `catalogue` is data; `verify.ts` only reads the file system; `scope.ts` writes exactly one file and is the only domain module that writes.
 - **`cli.ts` is the composition root.** It is the only module that constructs `McpState`, the only caller of `scaffold`, `cleanRun` and `preserve`, and the only place that decides the order of a run.
-- **The pipeline never exits.** `run()` reports through its return value; only `bin.ts` exits on failure and `args.ts` exits for `--help`. This is what makes `run()` library-safe (plan 008).
+- **The library never exits.** `run()` reports through its return value; only `bin.ts` exits on failure and `args.ts` exits for `--help`. This is what makes `run()` library-safe (plan 008).
 - **Verification has one home.** `missingOutputs` is imported by both `cli.ts` and `mcp/server.ts`; neither reimplements the rule.
 
 ### 5.3 Violations and smell inventory
@@ -361,11 +363,11 @@ sequenceDiagram
 | Location | Observation | Impact |
 |---|---|---|
 | `runner.ts` `switch (mode)` + `detect-mode.ts` `AGENT_BIN` | CLI command names live in two places | Adding a mode means editing both; a test could pin the agreement |
-| `cli.ts` `runAsMcpServer` | Duplicates output-dir creation, `cleanRun`, scope creation and trust warning from `runScope` | Two setup paths can drift; today they agree |
-| `cli.ts` | Reads `process.cwd()` in four functions instead of receiving a root | Harder to unit-test multi-project scenarios; `RunContext` already carries `outputDir`/`agentsDir` but not `projectRoot` (MCP state does) |
+| `cli.ts` `runAsMcpServer` | Duplicates output-dir creation, `cleanRun`, scope creation, trust warning and the project scaffold from `runScope` | Two setup paths can drift; today they agree |
+| `cli.ts` | Reads `process.cwd()` in two functions instead of receiving a root (`run`, `runScope`; `verify.projectPath` reads it a third time) | Harder to unit-test multi-project scenarios; `RunContext` already carries `outputDir`/`agentsDir` but not `projectRoot` (MCP state does) |
 | `logger.error` | Bypasses the configurable `out` and always uses `console.error` | In normal mode errors are separated from stdout; intentional, but means `setLogTarget` does not affect errors |
 | `package.json` `files` | Ships `specs/` and `docs/` but not `templates/.github` explicitly (covered by `templates`) | Fine today; the consumers of `PACKAGE_ROOT/specs` depend on packaging |
-| `cli.ts` summary | Prints `npx playwright …` even for pnpm projects | Cosmetic/docs drift risk (plan 013 addressed adjacent wording) |
+| `cli.ts` summary | Prints `npx playwright …` for every project | Deliberate and pinned by a test (`cli.test.ts` asserts the summary names `npx playwright test` and not `pnpm test`), so the docs and the summary agree |
 
 ---
 
@@ -384,7 +386,7 @@ Agent (catalogue record)
   ├ writes:   string[]   (project relative, folder must gain a file)
   └ completionSignal: string
 
-Snapshot = Map<absolutePath, mtimeMs>
+Snapshot = Map<absolutePath, Fingerprint | undefined>   (mtime + content hash)
 RunContext = {mode, outputDir, agentsDir, debug}
 McpState   = {outputDir, agentsDir, projectRoot, agents[], index, snapshot}
 ```
@@ -404,6 +406,9 @@ There is no ORM, no schema library and no migration system. `Scope` and `Batch` 
 | `.spectra/output/<agent>.log` | `runner.runAgentCli` | debugging | deleted at run start |
 | `.spectra/output/scopes/<n>-<slug>/**` | `cli.preserve` | user | folder tree removed at batch start; individual folder removed before reuse |
 | `pages/`, `tests/`, `fixtures/pages.ts` | Generator/Healer | Playwright, `countChanged`, typecheck | user-owned, never cleaned |
+| `docs/` (scope template + guides), `specs/` (gate docs) | `init.scaffold` | user, Agents | installed by `--init` and by `--mcp` (which scaffolds the project too), user edits preserved |
+| `.gitignore` | `init.ensureGitignore` | Git | missing ignore rules appended by `--init`, never rewritten |
+| `scopes-batch.json` | `init.scaffold` (`copyIfMissing`) | user, Batch | example, copied only when the project has none |
 | `.templates.json` | `init.installTemplates` | next `installTemplates` | append/rewrite |
 
 ### 6.3 Data access patterns
@@ -419,6 +424,7 @@ There is no ORM, no schema library and no migration system. `Scope` and `Batch` 
 | Boundary | Mechanism | Failure mode |
 |---|---|---|
 | CLI args | `parseArgs({strict:true})` | Node throws; `bin` exits non-zero |
+| Contradicting flags | `flagConflict` in `cli.ts` | logged `Error: --mcp does not use …`; the run returns `false` and nothing runs |
 | Unknown `--mode` / missing binary | `detectMode` throws | `prepare()` logs and returns `null` |
 | Batch file | `parseBatchConfig` (JSON shape, known keys, types, non-empty scopes) | logged `Invalid batch file …`, exit non-zero |
 | Missing URL | explicit checks | logged usage hint, exit non-zero |
@@ -443,7 +449,7 @@ There is none in the conventional sense. The security model is **process and fil
 ### 7.2 Error handling and resilience
 
 - **Fail fast, one Agent at a time.** A CLI error or a missing artefact sets `ok = false` and breaks the loop; later Agents never run.
-- **Errors become messages at the orchestration boundary.** `cli.ts` catches `unknown` and formats `err instanceof Error ? err.message : String(err)` — used in `prepare`, `--init`, `--batch` parse and the Agent loop.
+- **Errors become messages at the application boundary.** `cli.ts` catches `unknown` and formats `err instanceof Error ? err.message : String(err)` — used in `prepare`, `--init`, `--batch` parse and the Agent loop.
 - **Child-process handling.** `error` and `close` both close the log exactly once; non-zero exit rejects with the log path.
 - **Manual-mode timeout.** 30 minutes, with an actionable message naming the completion file.
 - **No retries, no circuit breaker, no resume.** Batch failure does not roll back earlier Scopes; their result folders remain and are reported.
@@ -468,14 +474,14 @@ Three distinct layers:
 2. **Prompt/scope validation** — `oneLine` normalisation and explicit "requirements, not orders" framing in `current-scope.md`.
 3. **Outcome validation** — the snapshot rule in `verify.ts`, the invariant that makes a run's success claim meaningful.
 
-Business-rule validation of *test quality* is not in code; it lives in the gate documents (`specs/PLANNER-GATE.md`, `specs/GENERATOR-GATE.md`, `specs/CI-HEALER-POLICY.md`) and in the Agent prompts.
+Business-rule validation of *test quality* is not in code; it lives in the gate documents (`specs/PLANNER-GATE.md`, `specs/GENERATOR-GATE.md`, `specs/CI-HEALER-POLICY.md`) and in the Agent prompts. The shipped Healer template follows the CI/Healer policy: it repairs locators and timing only, and an expected value, a message or a test step is reported for human review instead of being changed.
 
 ### 7.5 Configuration management
 
 | Source | Keys | Precedence |
 |---|---|---|
 | Flags | `--url/-u`, `--page/-p`, `--scope/-s`, `--file/-f`, `--batch/-b`, `--manual/-m`, `--mode`, `--init`, `--mcp`, `--debug`, `--help/-h` | highest |
-| Env | `SPECTRA_URL`, `SPECTRA_MODE`, `SPECTRA_DEBUG` (or `DEBUG=1`) | fallback |
+| Env | `SPECTRA_URL`, `SPECTRA_MODE` (ignored in native mode), `SPECTRA_DEBUG` (or `DEBUG=1`) | fallback |
 | Batch JSON | `url`, `scopes[]` | between flag and env for URL; per-Scope fields below shared flags |
 | Playwright env | `SPECTRA_BROWSERS`, `SPECTRA_TAGS`, `SPECTRA_SKIP_WEBSERVER`, `CI` | consumed by config only |
 | Files | `scope` file, `playwright.config.ts`, `.mcp.json`, `.cursor/mcp.json` | user-owned |
@@ -512,12 +518,12 @@ Versioning: the MCP protocol version is a constant; the package follows semver a
 
 ### 9.2 Playwright (consumer side, not core)
 
-`playwright.config.ts` is both a shipped template and this repo's own config. It encodes:
+`playwright.config.ts` is both a shipped template (`templates/config/playwright.config.ts`) and this repo's own config; the two differ only in the `webServer` block, which this repo needs to start `dummy-test-app`. It encodes:
 
 - `testDir: './tests'`, `fullyParallel`, CI retries 2, one worker in CI.
 - `baseURL` from `SPECTRA_URL` (default `http://localhost:5173`).
 - Reporter fan-out: HTML into `.spectra/output/reports`, JSON into `.spectra/output/reports/results.json` (the Healer's input), `list`.
-- A conditional `webServer` that starts the repo's `dummy-test-app` with `vite --strictPort` only for localhost/127.0.0.1 and only when `SPECTRA_SKIP_WEBSERVER` is unset.
+- A conditional `webServer` (this repo's own config only; the shipped template has none) that starts the repo's `dummy-test-app` with `pnpm exec vite --port <port> --strictPort` only for localhost/127.0.0.1 and only when `SPECTRA_SKIP_WEBSERVER` is unset.
 - Browser matrix from `SPECTRA_BROWSERS` (`all` expands to chromium/firefox/webkit/mobile), tag grep from `SPECTRA_TAGS`.
 - `outputDir: '.spectra/output/test-results'`, trace on first retry, screenshot on failure, `data-testid` attribute.
 
@@ -532,14 +538,14 @@ Generated code convention (visible in `pages/`, `fixtures/`): one class per page
 - **Record types over classes** for data (`Agent`, `Scope`, `Batch`, `RunContext`, `McpState`).
 - **Discriminated unions for fallible parsing** (`BatchParse`) instead of exceptions — the caller decides how to report.
 - **Narrow exported surface.** `index.ts` exports `run`, `SpectraOptions`, two path constants, `detectMode`, `CliMode` and `createScopeContext`; internals stay internal. Adapters export the minimum needed (`buildPrompt`, `RunContext` for MCP; `projectPath`, `missingOutputs`, `Snapshot` for MCP; `agentLogName` for CLI cleanup).
-- **Optional fields express absence**, and consumers use `??` / truthiness; no sentinel values except `mtimeOf → -1`.
+- **Optional fields express absence**, and consumers use `??` / truthiness; no sentinel values — a file that does not exist is `undefined` in the snapshot.
 
 ### 10.2 Service implementation
 
 - **Explicit context objects** (`RunContext`, `McpState`) carry absolute paths so adapters never recompute roots.
 - **Composition root** (`cli.run`) creates directories, cleans state, snapshots, then delegates.
 - **Template method by data**: the Agent loop is the same for all three Agents; differences are entirely in the catalogue record.
-- **Error conversion at the edge**: adapters throw, orchestration logs and returns `false`.
+- **Error conversion at the edge**: adapters throw, the application layer logs and returns `false`.
 
 ### 10.3 Repository/persistence implementation
 
@@ -577,9 +583,9 @@ Generated code convention (visible in `pages/`, `fixtures/`): one class per page
 ### 11.2 Notable unit-test patterns
 
 - `catalogue.test.ts` reads the shipped `AGENT.md` and `shared/context.md` and asserts that every Agent's `inputs`, `outputs` and `completionSignal` appear there as paths under `.spectra/output/` — the anti-drift test that ADR 0001 chose over generation. It does **not** check `projectOutputs` or `writes`.
-- `init.test.ts` covers edit preservation, orphan deletion, manifest corruption and path traversal (plan 009).
+- `init.test.ts` covers edit preservation, orphan deletion, manifest corruption, path traversal (plan 009), the copied examples and the ignore rules.
 - `runner.test.ts` uses a fake agent executable and temporary projects; `mcp/server.test.ts` drives `handleMcpRequest`/`serveMcp` with in-memory streams.
-- `cli.test.ts` (722 lines) is the integration seam: it mocks `runner`, `init`, `logger` and exercises `--init`, `--batch`, URL precedence, clean/preserve and summary behaviour.
+- `cli.test.ts` (774 lines) is the integration seam: it mocks `runner`, `init`, `scope`, `detect-mode`, `mcp/server` and `logger`, and exercises `--init`, `--batch`, contradicting flags, URL precedence, clean/preserve and summary behaviour.
 
 ### 11.3 Gaps
 
@@ -595,7 +601,7 @@ Generated code convention (visible in `pages/`, `fixtures/`): one class per page
 ### 12.1 Distribution
 
 - Published to npm as `spectra-test-automation` (public, Changesets, GitHub changelog).
-- Release pipeline `.github/workflows/release.yml` runs on `main` push with write permissions for contents/PRs; `pnpm run release` chains `check → typecheck → typecheck:test → test:unit → build → changeset publish`.
+- Release pipeline `.github/workflows/release.yml` runs on `main` push with write permissions for contents/PRs; the Changesets action versions with `pnpm run version-packages` and publishes with `pnpm run release`, which chains `check → typecheck → typecheck:test → test:unit → build → publish:package` (`npm publish --provenance`, skipped when the version is already on npm — the publish goes through npm because pnpm cannot exchange an OIDC token).
 - Installed as a dev dependency next to `@playwright/test`; `prepare` builds on git installs.
 - `PACKAGE_ROOT` assumes `dist/utils/constants.js` is exactly two levels below the package root — moving compiled output breaks template/spec discovery.
 
@@ -613,9 +619,9 @@ Developer machine / CI runner
 
 ### 12.3 CI
 
-- **This repo:** `.github/workflows/ci.yml` runs Biome check, core typecheck, test typecheck and Vitest; `.github/workflows/test.yml` installs the dummy app's dependencies and runs Playwright.
+- **This repo:** `.github/workflows/ci.yml` runs Biome check, core typecheck, test typecheck and Vitest; `.github/workflows/test.yml` runs the unit tests, installs the dummy app's dependencies and runs Playwright.
 - **Consumer template:** `.github/workflows/test.yml` (shipped) installs deps and Chromium, has an explicitly marked block for the consumer's app, runs `npx playwright test` with `SPECTRA_URL`, and uploads the report (always) and raw results (on failure).
-- **Healer in CI:** `specs/CI-HEALER-POLICY.md` defines trace/report settings, retry limits and triage tags `@blocked`/`@flaky`; this repo's CI does not invoke Spectra — whether the Healer runs in a consumer's CI is a consumer choice.
+- **Healer in CI:** `specs/CI-HEALER-POLICY.md` defines trace/report settings, retry limits and triage tags `@blocked`/`@flaky`; the shipped Healer template (`templates/agents/healer/AGENT.md`) follows the same policy, and this repo's CI does not invoke Spectra — whether the Healer runs in a consumer's CI is a consumer choice.
 
 ### 12.4 Environment adaptations
 
@@ -645,11 +651,11 @@ Drop it under `templates/` in the mirrored destination structure. `installTempla
 
 ### 13.4 Adding a CLI surface
 
-Add the flag to `parseArgs` and `SpectraOptions`, then handle it in `run()` before the default branch. Keep `printUsage` in sync. Prefer composing `runScope` over duplicating setup; if setup must be reused, extract it rather than copy it (the MCP path currently copies it).
+Add the flag to `parseArgs` and `SpectraOptions`, then handle it in `run()` before the default branch. Keep `printUsage` in sync. If the flag contradicts another one, refuse the run in `flagConflict` instead of letting one of the two win silently. Prefer composing `runScope` over duplicating setup; if setup must be reused, extract it rather than copy it (the MCP path currently copies it).
 
 ### 13.5 Adding an MCP capability
 
-Extend `TOOLS`, handle the name in the `tools/call` branch, and keep responses as `textResult`. Anything that mutates pipeline position belongs on `McpState` and must go through `missingOutputs` first.
+Extend `TOOLS`, handle the name in the `tools/call` branch, and keep responses as `textResult`. Anything that mutates the position in the Spectrum belongs on `McpState` and must go through `missingOutputs` first.
 
 ### 13.6 Modifying the completion rule
 
@@ -706,7 +712,9 @@ const missing = missingOutputs(agent, state.outputDir, state.projectRoot, state.
 if (missing.length > 0) {
   return reply(textResult({ error: `The ${agent.name} did not write everything the catalogue declares.`, missing }, true));
 }
-fs.writeFileSync(path.join(state.outputDir, agent.completionSignal), `${new Date().toISOString()}\n`, 'utf-8');
+const signal = path.join(state.outputDir, agent.completionSignal);
+fs.mkdirSync(path.dirname(signal), { recursive: true });
+fs.writeFileSync(signal, `${new Date().toISOString()}\n`, 'utf-8');
 state.index += 1;
 ```
 
@@ -765,7 +773,7 @@ export { createScopeContext } from './utils/scope.js';
 ### ADR 0003 — An Agent is done when it wrote its files during this run
 
 - **Context:** existence-only checks let later Scopes/MCP sessions reuse earlier work.
-- **Decision:** snapshot mtimes at run start; accept only new-or-changed files; a folder passes on one changed file.
+- **Decision:** snapshot the mtime and the content hash of the files the Agents write at run start; accept only new-or-changed files; a folder passes on one changed file.
 - **Rejected:** existence checks.
 - **Consequences:** two narrow clock windows (pre-run writes, same-tick rewrites) are known and annotated in `verify.ts`.
 
@@ -796,13 +804,13 @@ export { createScopeContext } from './utils/scope.js';
 | Unit tests | `pnpm test:unit` (Vitest) | Domain rules, adapters, CLI composition |
 | Catalogue/template agreement | `catalogue.test.ts` | ADR 0001 |
 | Playwright suite | `pnpm test` | The generated suite against `dummy-test-app` |
-| Release gate | `pnpm run release` | Biome, both typechecks, unit tests and build before `changeset publish` (Playwright is separate) |
+| Release gate | `pnpm run release` | Biome, both typechecks, unit tests and build before `publish:package` (Playwright is separate) |
 | ADRs and plans | `docs/adr/`, `plans/` with execution reports | Human record of decisions and verification |
 
 ### 16.2 Gaps
 
 - No dependency-cruiser/import-boundary rule: the "domain must not import adapters" rule is convention, not CI.
-- No test that `AGENT_BIN` and `runner`'s `switch` agree on mode commands.
+- No test that `AGENT_BIN` and `runner`'s `switch` agree on mode commands; the runner test pins the argv of `codex`, `opencode` and `gemini` only.
 - No coverage threshold; `--coverage` exists but is not gated.
 - No schema validation for `.templates.json` beyond shape tolerance.
 - No check that `printUsage` matches `parseArgs`.
@@ -810,7 +818,7 @@ export { createScopeContext } from './utils/scope.js';
 
 ### 16.3 Documentation practices
 
-`CONTEXT.md` fixes the ubiquitous language (Spectrum, Agent, Agent catalogue, Scope, Scope definition, Scope results, Feature focus, Batch, Mode, Completion signal, Plan, Page Object, Healing Report). `docs/adr/` records irreversible-ish choices with rejected alternatives. `plans/` keeps the plan and its execution report. `specs/` holds the human gates. `docs/` holds consumer guides. README is the marketing + entry point and is kept accurate by plan 022.
+`CONTEXT.md` fixes the ubiquitous language (Spectrum, Agent, Agent catalogue, Scope, Scope definition, Scope results, Feature focus, Batch, Mode, Native mode, Completion signal, Plan, Page Object, Healing Report). `docs/adr/` records irreversible-ish choices with rejected alternatives. `plans/` keeps the plan and its execution report. `specs/` holds the human gates. `docs/` holds consumer guides. README is the marketing + entry point and is kept accurate by plan 022.
 
 ---
 
@@ -827,6 +835,7 @@ export { createScopeContext } from './utils/scope.js';
 | Change Batch semantics | `src/utils/batch.ts` (pure) | `cli.ts` batch branch, `docs/BATCH-CONFIG.md`, tests |
 | Change scope rendering/trust | `src/utils/scope.ts` + `warnOnUntrustedFile` | `scope.test.ts`, README "Trust", `docs/SCOPE-template.md` |
 | Change scaffold/template upgrade | `src/agents/init.ts` | `templates/**`, `init.test.ts`, docs |
+| Change the ignore rules of a scaffolded project | `src/utils/layout.ts` (`PROJECT_IGNORES`) | `init.ensureGitignore`, `init.test.ts`, the repo's own `.gitignore` |
 | Add/modify MCP tool | `src/mcp/server.ts` `TOOLS` + `tools/call` | `server.test.ts`, ADR if the contract changes |
 | Change Playwright defaults | `playwright.config.ts` + `templates/config/playwright.config.ts` | docs, Healer prompt (it reads `results.json`) |
 | Update generated-style guidance | `templates/agents/generator/AGENT.md`, `fixtures/pages.ts` | `specs/GENERATOR-GATE.md` |
@@ -849,7 +858,7 @@ export function parseThing(text: string): ThingParse {
 **New adapter**
 
 ```ts
-// takes an explicit context, throws on failure, lets the orchestration layer decide
+// takes an explicit context, throws on failure, lets the application layer decide
 export interface ThingContext { root: string; /* absolute paths */ }
 
 export async function doThing(ctx: ThingContext): Promise<void> {
@@ -870,7 +879,7 @@ export async function doThing(ctx: ThingContext): Promise<void> {
 
 - Unit: `src/<area>/__tests__/<module>.test.ts`, use `vi.mock` for fs/child_process/logger only when the real thing is unsafe; prefer temp dirs for fs behaviour.
 - Generated-code: add or change a fixture/page object, then run `pnpm typecheck:test`.
-- Integration: extend `src/__tests__/cli.test.ts` when orchestration order or precedence changes.
+- Integration: extend `src/__tests__/cli.test.ts` when the order of the steps or the precedence of the flags changes.
 
 ### 17.3 Common pitfalls
 
@@ -882,7 +891,7 @@ export async function doThing(ctx: ThingContext): Promise<void> {
 6. **Cleaning too much or too little.** `cleanRun` removes only catalogue artefacts, signals, results and logs. Deleting `pages/` or `tests/` would destroy user work; leaving old signals would fake success.
 7. **Skipping the trust warning** on a new file-reading path — scope files cross a trust boundary.
 8. **Forgetting the shipped twin.** A change to `playwright.config.ts`, `fixtures/pages.ts`, `.mcp.json`, the CI workflow or a gate doc usually needs the same change under `templates/`.
-9. **Testing only the happy path.** The meaningful failures are: no URL, bad Batch, unknown mode, missing binary, untrusted file, missing artefact, wrong agent name in `spectra_done`, and a stale completion signal.
+9. **Testing only the happy path.** The meaningful failures are: no URL, bad Batch, contradicting flags, unknown mode, missing binary, untrusted file, missing artefact, wrong agent name in `spectra_done`, and a stale completion signal.
 10. **mtime assumptions.** Do not build a feature that requires detecting an identical rewrite within one filesystem tick; the code documents that limit.
 
 ### 17.4 Keeping this document current
@@ -898,12 +907,13 @@ src/
   bin.ts             process entry, exit code
   args.ts            flag parsing + usage
   index.ts           public library API
-  cli.ts             orchestration (init/batch/mcp/single)
+  cli.ts             application layer (init/batch/mcp/single)
+  __tests__/         args, cli, index
   agents/
     catalogue.ts     Agent records + derived constants
     runner.ts        prompt building, CLI spawn, manual wait
     verify.ts        snapshot + completion rule
-    init.ts          scaffold + hash-manifest template install
+    init.ts          scaffold + hash-manifest template install + ignore rules
     __tests__/       catalogue, init, runner, verify
   mcp/
     server.ts        stdio JSON-RPC, 3 tools, session state
@@ -932,4 +942,4 @@ plans/               implementation plans + execution reports
 5. The library path never exits: `process.exit` appears only in `bin.ts` (failure) and `args.ts` (`--help`).
 6. Template upgrades never overwrite a file the user changed; they report the new template path.
 7. A template manifest cannot name a path outside its destination.
-8. A scope file's text is requirements, not instructions, and is normalised to one line per field.
+8. A scope file's text is requirements, not instructions, and is fenced so it cannot change the structure of the context; the Scope's own fields are normalised to one line each.
