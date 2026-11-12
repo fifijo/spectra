@@ -39,6 +39,35 @@ answers and that the page has a title.
 
 Every generated test must have at least one tag.
 
+Two more tags exist for triage, added by the Healer when it cannot make a test
+pass: `@blocked` (the application is broken) and `@flaky` (the test is
+timing-dependent). The Generator never emits them.
+
+This table is the vocabulary. `templates/agents/generator/AGENT.md` carries the
+same table for the Generator, which has to work for a user who never sees this
+file.
+
+## Required patterns
+
+The Generator template (`templates/agents/generator/AGENT.md`, "Step 6:
+Required Test Patterns") defines twelve patterns. A review rejects output that
+skips a required one.
+
+| Pattern | Component it needs | Tag | Required when |
+|---------|--------------------|-----|---------------|
+| A. Empty state | list, grid or filter | `@empty` | every page with a list, grid or filter |
+| B. Form validation | a form | `@validation` | every form |
+| C. Toggle/interaction | checkbox, tab, accordion | `@interaction` | toggles exist |
+| D. Loading/async state | an async submit | `@e2e` | async operations exist |
+| E. Confirmation/destructive | delete or remove action | `@critical` | delete actions exist |
+| F. Date/time picker | date or time input | `@e2e` | component exists |
+| G. File upload | upload control | `@e2e` | component exists |
+| H. Autocomplete | combobox with suggestions | `@e2e` | component exists |
+| I. Infinite scroll | load-more or auto-load list | `@e2e` | component exists |
+| J. Toast notification | toast or alert | `@e2e` | component exists |
+| K. Keyboard navigation | forms and dialogs | `@a11y` | recommended on every page |
+| L. Password strength | password input with a meter | `@e2e` | component exists |
+
 ## Code structure rules
 
 - Page Objects go in `pages/<Name>Page.ts`.
@@ -66,6 +95,11 @@ Every generated test must have at least one tag.
     - [ ] Autocomplete tests exist when component is present.
     - [ ] Keyboard navigation tests exist for forms.
     - [ ] Toast/notification tests exist when component is present.
+    - [ ] Loading state tests exist when an async operation exists.
+    - [ ] Destructive action tests cover confirm and cancel when delete actions exist.
+    - [ ] File upload tests exist when an upload control is present.
+    - [ ] Infinite scroll tests exist when the list loads more on scroll.
+    - [ ] Password strength tests exist when a strength meter is present.
 4. Merge after approval; CI runs the full suite.
 
 ## Decision

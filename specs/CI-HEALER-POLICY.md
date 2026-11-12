@@ -18,29 +18,35 @@ export default defineConfig({
   use: {
     trace: 'on-first-retry',        // capture trace on first retry
     screenshot: 'only-on-failure',   // screenshot on failure
-    video: 'retain-on-failure',      // optional: video on failure
   },
 });
 ```
 
 ### Artifact upload
 
-CI must upload the following artifacts on every run (pass or fail):
+A CI run should upload the artifacts a failure needs. This repository's
+workflow uploads:
 
-| Artifact | Path | Retention |
-|----------|------|-----------|
-| HTML report | `.spectra/output/reports/` | 30 days |
-| JSON results | `.spectra/output/reports/results.json` | 30 days |
-| Traces | `.spectra/output/test-results/` | 7 days |
-| Screenshots | `.spectra/output/test-results/` | 7 days |
+| Artifact | Path | When | Retention |
+|----------|------|------|------------|
+| HTML report | `.spectra/output/reports/` | every run (pass or fail) | 30 days |
+| JSON results | `.spectra/output/reports/results.json` | on failure | 7 days |
+| Traces | `.spectra/output/test-results/` | on failure | 7 days |
+| Screenshots | `.spectra/output/test-results/` | on failure | 7 days |
+
+The JSON results are what the Healer reads, so a failing run must keep them.
+Upload them on every run if your team wants the results of green runs too.
+
+> Add `video: 'retain-on-failure'` to `use` if your CI should keep videos; it
+> is not on by default.
 
 ## Healer retry limits
 
-| Parameter | Value | Rationale |
-|-----------|-------|-----------|
-| Max attempts per test | 3 | Prevents infinite loops |
-| Max total Healer cycles | 5 | Bounds wall-clock time |
-| Timeout per attempt | 60 seconds | Matches Playwright default |
+| Limit | Value | Where it comes from |
+|-------|-------|---------------------|
+| Max attempts per test | 3 | `templates/agents/healer/AGENT.md` (`MAX_ATTEMPTS`) |
+| Total Healer cycles | unbounded | The Healer stops when every test passes or has used its attempts |
+| Per-attempt timeout | the Playwright test timeout (30 seconds by default) | `playwright.config.ts` |
 
 ### Rules
 
