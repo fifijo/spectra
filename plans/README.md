@@ -43,11 +43,11 @@ advisor.
 | 025 | The CI/Healer policy matches the workflow it describes | P2 | S | — | DONE |
 | 026 | The Generator's own samples pass the gate they are reviewed against | P2 | M | 017 | DONE |
 | 027 | A scaffolded project gets the examples the guides tell it to run | P2 | M | — | TODO |
-| 028 | The shipped CI policy and Generator Gate say what the code does | P1 | S | — | TODO |
-| 029 | The README stops claiming the Healer is scoped | P2 | S | — | TODO |
-| 030 | `--init` adds the ignore rules a Spectra project needs | P1 | S | — | TODO |
-| 031 | A conflicting flag stops the run instead of being ignored | P2 | S | — | TODO |
-| 032 | The MCP stdio loop is tested at its edges | P2 | S | — | TODO |
+| 028 | The shipped CI policy and Generator Gate say what the code does | P1 | S | — | DONE |
+| 029 | The README stops claiming the Healer is scoped | P2 | S | — | DONE |
+| 030 | `--init` adds the ignore rules a Spectra project needs | P1 | S | — | DONE |
+| 031 | A conflicting flag stops the run instead of being ignored | P2 | S | — | DONE |
+| 032 | The MCP stdio loop is tested at its edges | P2 | S | — | DONE |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) |
 REJECTED (with one-line rationale — finding fixed independently or approach
@@ -224,12 +224,13 @@ abandoned)
 - **Plans 024, 025 and 026 are marked DONE, but their gate and policy edits
   are in no commit.** `git log --all -S "unbounded" -- specs/CI-HEALER-POLICY.md`
   and `git log --all -S "Loading state" -- specs/GENERATOR-GATE.md` both return
-  nothing: the execution reports of 2026-11-10 describe changes that never
-  entered `main`. Their own acceptance greps fail at HEAD — the policy still
-  says "Max total Healer cycles | 5" and the gate never names the loading
-  state, destructive action, file upload, infinite scroll or password strength
-  patterns that `templates/agents/generator/AGENT.md` mandates. Plan 028
-  re-applies them and adds the closing note to this index when it lands.
+  nothing: the execution reports of 2026-11-10 describe changes that
+  never entered `main`. Their own acceptance greps failed at `98a6d24` — the
+  policy still said "Max total Healer cycles | 5" and the gate never named the
+  loading state, destructive action, file upload, infinite scroll or password
+  strength patterns that `templates/agents/generator/AGENT.md` mandates. Plan
+  028 re-applied all of it in commit `775b335`; its own acceptance greps now
+  pass, and the closing note it asks for is the first bullet of this section.
 - **Plan 015 is probably closable.** `prepare: pnpm run build` exists at HEAD
   but not at `660399d`, the commit the plan was written against
   (`git show 660399d:package.json | grep prepare` is empty). Verify one git
@@ -239,6 +240,31 @@ abandoned)
   Healer-scoping claim.
 - **Plans 018, 019, 020, 021, 023 and 027 still reproduce** at `98a6d24`
   (spot-checked against the live code). They are not covered by 028–032.
+
+### Plans 028–032 as executed (2026-11-12)
+
+Implemented on branch `advisor/execute-028-032`, fast-forwarded into `main`
+as five commits: `775b335` (docs: the CI policy and the Generator gate),
+`f4ea0fd` (docs: the Healer runs the whole suite), `41802a7` (feat: the
+ignore rules a run needs), `2eadec1` (fix: refuse contradicting flags) and
+`ae9652c` (test: the MCP stdio framing edges). Each executor worked in an
+isolated worktree and its diff was reviewed before it landed.
+
+Two deviations from the plans, both recorded by the executors:
+
+- **030** builds the ignore list in `src/utils/layout.ts` (`PROJECT_IGNORES`)
+  instead of shipping a `templates/.gitignore`: npm drops `.gitignore` from
+  published tarballs, so a template file would never reach a consumer.
+- **031** makes `--mcp --init` an error. `runAsMcpServer` scaffolds the
+  project itself, so the combination was redundant rather than useful; a
+  programmatic caller passing both now gets `false` instead of a served
+  Spectrum.
+
+All checks green at `ae9652c`: `pnpm check` (62 files), `pnpm typecheck`,
+`pnpm typecheck:test`, `pnpm build`, `pnpm test:unit` → 14 files, 192 tests
+pass; `pnpm test:unit:coverage` → 92.46% statements and 82.99% branches, up
+from 91.46% and 81.26%. The Playwright suite (18 tests) was unaffected — no
+generated code, page object or config changed.
 
 ## Direction notes (not plans)
 
