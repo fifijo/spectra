@@ -1,6 +1,6 @@
 # Verification Pilot
 
-Run this pilot **before** scaling Spectra to all stories. The goal is to validate the full pipeline end-to-end and confirm that failure modes are handled correctly.
+Run this pilot **before** scaling Spectra to all stories. The goal is to validate the full Spectrum end-to-end and confirm that failure modes are handled correctly.
 
 ## Pilot 1: Full story end-to-end
 
@@ -20,7 +20,7 @@ One real story flows through every phase: Plan → Generate → CI → Close.
    - Review against the Generator Gate checklist (`specs/GENERATOR-GATE.md`).
 5. **CI run**: Push to CI and run `npx playwright test`.
    - All tests should pass on the first or second attempt.
-6. **Close story**: Link PR, spec file, and test files in the work tracker.
+6. **Close story**: Link PR, the Plan, and the test files in the work tracker.
 
 ### Metrics to record
 
@@ -108,6 +108,6 @@ After completing pilots 1–3, verify the toolchain survives a Playwright versio
 | Pilot result | Next step |
 |-------------|-----------|
 | All 3 pilots pass | Scale to all stories; onboard team |
-| Pilot 1 fails | Fix pipeline issues; re-run |
+| Pilot 1 fails | Fix Spectrum issues; re-run |
 | Pilot 2 fails (Healer too aggressive) | Tighten Healer policy; re-run |
 | Pilot 3 fails (Healer hides bug) | Add assertion-lock rules; re-run |

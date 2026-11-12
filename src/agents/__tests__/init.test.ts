@@ -68,6 +68,7 @@ function setupTemplates(templateRoot: string): void {
   fs.writeFileSync(path.join(templateRoot, '.mcp.json'), '{}', 'utf-8');
   fs.writeFileSync(path.join(testsDir, 'seed.spec.ts'), '// seed', 'utf-8');
   fs.writeFileSync(path.join(workflowDir, 'test.yml'), 'name: test', 'utf-8');
+  fs.writeFileSync(path.join(templateRoot, 'scopes-batch.json'), '{"scopes":[]}', 'utf-8');
 }
 
 describe('initAgents', () => {
@@ -382,6 +383,46 @@ describe('scaffold', () => {
     scaffold(projectRoot);
 
     expect(fs.readFileSync(path.join(workflowDir, 'test.yml'), 'utf-8')).toBe('mine');
+  });
+
+  it('copies the batch example when the project has none', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+
+    scaffold(projectRoot);
+
+    expect(fs.existsSync(path.join(projectRoot, 'scopes-batch.json'))).toBe(true);
+  });
+
+  it('does not overwrite an existing batch example', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+    fs.writeFileSync(path.join(projectRoot, 'scopes-batch.json'), 'mine', 'utf-8');
+
+    scaffold(projectRoot);
+
+    expect(fs.readFileSync(path.join(projectRoot, 'scopes-batch.json'), 'utf-8')).toBe('mine');
+  });
+
+  it('installs the guides next to the scope template, and keeps both', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+
+    const packageRoot = '/tmp/spectra-test-package';
+    const guidesSource = path.join(packageRoot, 'docs');
+    fs.mkdirSync(guidesSource, { recursive: true });
+    fs.writeFileSync(path.join(guidesSource, 'BATCH-CONFIG.md'), '# Batch Config', 'utf-8');
+    fs.writeFileSync(path.join(guidesSource, 'PUBLISHING.md'), '# Publishing', 'utf-8');
+
+    scaffold(projectRoot);
+    scaffold(projectRoot);
+
+    expect(fs.existsSync(path.join(projectRoot, 'docs', 'BATCH-CONFIG.md'))).toBe(true);
+    expect(fs.existsSync(path.join(projectRoot, 'docs', 'SCOPE-template.md'))).toBe(true);
+    // The documents about this package stay out of the user's project.
+    expect(fs.existsSync(path.join(projectRoot, 'docs', 'PUBLISHING.md'))).toBe(false);
+
+    fs.rmSync(packageRoot, { recursive: true, force: true });
   });
 
   it('ignores the output a run leaves behind', () => {

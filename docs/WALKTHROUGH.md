@@ -90,8 +90,10 @@ npx spectra-test-automation --url http://localhost:5173
 │                                                                 │
 │  tests/login.spec.ts:                                          │
 │  ┌─────────────────────────────────────────────────────────┐   │
-│  │ test('valid login', async ({ page }) => {                │   │
-│  │   const loginPage = new LoginPage(page);                 │   │
+│  │ import { test, expect } from '../fixtures/pages.js';     │   │
+│  │                                                          │   │
+│  │ test('valid login', async ({ loginPage, page }) => {     │   │
+│  │   await loginPage.goto();                                │   │
 │  │   await loginPage.emailInput.fill('user@test.com');      │   │
 │  │   await loginPage.passwordInput.fill('password');        │   │
 │  │   await loginPage.submitButton.click();                  │   │
@@ -160,6 +162,8 @@ Creates:
 - 3 agents (Planner, Generator, Healer)
 - MCP configuration
 - Seed spec (`tests/seed.spec.ts`, created by `spectra --init`)
+- Batch example (`scopes-batch.json`, created by `spectra --init`)
+- Guides (`docs/`, created by `spectra --init`)
 - `spectra` CLI (via `npx spectra-test-automation`)
 
 ### Option B: Install from Git
@@ -223,7 +227,8 @@ project. Only use a file you trust.
 
 ### Multiple Scopes (Batch Mode)
 
-Run multiple scopes sequentially using a batch JSON config:
+Run multiple scopes sequentially using a batch JSON config.
+`spectra --init` writes an example `scopes-batch.json` into your project:
 
 ```bash
 npx spectra-test-automation --batch scopes-batch.json
@@ -327,6 +332,8 @@ npx spectra-test-automation \
 
 ### Multiple Scopes (Batch Mode)
 
+`spectra --init` writes an example `scopes-batch.json` into your project:
+
 ```bash
 # Use batch JSON config
 npx spectra-test-automation --batch scopes-batch.json
@@ -398,16 +405,18 @@ spectra/
 │   ├── agents/                 # Agent definitions (Planner, Generator, Healer)
 │   ├── docs/                   # Scope template
 │   └── fixtures/               # Test fixture template
-├── specs/                      # Pipeline gate docs & Markdown plans
+├── specs/                      # Spectrum gate docs & Markdown plans
 ├── tests/                      # End-to-end & integration tests
 │   └── seed.spec.ts            # Environment readiness contract
 ├── docs/                       # Documentation
 │   └── SCOPE-template.md       # Scoping template
-├── scopes-batch.json           # Batch config example
+├── scopes-batch.json           # Batch config example (spectra --init writes one)
 ├── playwright.config.ts        # Playwright configuration
 ├── tsconfig.json               # TypeScript build config
 ├── tsconfig.test.json          # TypeScript config for Playwright tests
 ├── package.json                # npm package definition
+├── .cursor/
+│   └── mcp.json                # MCP config for Cursor
 ├── .spectra/                   # Generated via --init
 │   ├── agents/
 │   │   ├── planner/AGENT.md    # 🔵 Planner
@@ -422,13 +431,18 @@ spectra/
 │       ├── reports/
 │       │   ├── healing-report.md
 │       │   └── status.json      # Machine-readable status
-│       ├── scopes/              # One folder per scope in a batch
+│       ├── scopes/              # One folder per Scope in a Batch
+│       │   └── 1-login-form/    # <number>-<slug>
 │       └── test-results/        # Playwright test results
 ├── fixtures/
 │   └── pages.ts                 # Reusable test fixtures
 ├── pages/                       # Generated Page Objects
 └── tests/                       # Generated tests
 ```
+
+The folder of a Scope in a Batch is `<number>-<slug>`: the Scope's name,
+lowercased, with every run of non-alphanumeric characters replaced by `-` — a
+Scope named "Login Form" is kept in `1-login-form/`.
 
 ---
 

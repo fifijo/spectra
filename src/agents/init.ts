@@ -9,6 +9,19 @@ import { logger } from '../utils/logger.js';
 /** Remembers which template version each installed file came from. */
 const MANIFEST = '.templates.json';
 
+/**
+ * The guides a project needs next to its code. PUBLISHING.md and the ADRs
+ * are about this package, not about the user's project.
+ */
+const GUIDES = ['BATCH-CONFIG.md', 'CI-CD.md', 'QUICK-REFERENCE.md', 'WALKTHROUGH.md'];
+
+/** A template directory to install, and the entries to take from it. */
+interface TemplateSource {
+  dir: string;
+  /** The names of the entries to take from the top level of the directory. */
+  only?: string[];
+}
+
 function hash(content: Buffer): string {
   return createHash('sha256').update(content).digest('hex');
 }
@@ -47,8 +60,22 @@ export function initAgents(projectRoot: string): void {
     throw new Error(`Template directory not found: ${agentsSource}`);
   }
 
-  installTemplates(agentsSource, agentsDest);
+  installTemplates([{ dir: agentsSource }], agentsDest);
   logger.success('Agent templates initialized in .spectra/agents/');
+}
+
+/**
+ * The template directories that fill the project's docs/: the scope template
+ * and the guides. They share one manifest, so neither removes the other's
+ * files when `--init` runs again.
+ */
+function docSources(): TemplateSource[] {
+  const sources: TemplateSource[] = [];
+  const scopeTemplate = path.join(TEMPLATE_DIR, 'docs');
+  if (fs.existsSync(scopeTemplate)) sources.push({ dir: scopeTemplate });
+  const guides = path.join(PACKAGE_ROOT, 'docs');
+  if (fs.existsSync(guides)) sources.push({ dir: guides, only: GUIDES });
+  return sources;
 }
 
 /**
@@ -62,22 +89,22 @@ export function scaffold(projectRoot: string): void {
 
   initAgents(projectRoot);
 
-  // Copy doc templates
-  const docsSource = path.join(TEMPLATE_DIR, 'docs');
-  const docsDest = path.join(projectRoot, 'docs');
-  if (fs.existsSync(docsSource)) {
-    installTemplates(docsSource, docsDest);
+  // The scope template and the guides, side by side in the project's docs/
+  const docSourceList = docSources();
+  if (docSourceList.length > 0) {
+    installTemplates(docSourceList, path.join(projectRoot, 'docs'));
   }
 
   // Copy the gate documentation into specs/
   const specsSource = path.join(PACKAGE_ROOT, 'specs');
   const specsDest = path.join(projectRoot, 'specs');
   if (fs.existsSync(specsSource)) {
-    installTemplates(specsSource, specsDest);
+    installTemplates([{ dir: specsSource }], specsDest);
   }
 
-  // The fixture, the Playwright config, both MCP configs, the seed spec and the
-  // CI workflow: the project keeps its own version of each one.
+  // The fixture, the Playwright config, both MCP configs, the seed spec, the
+  // CI workflow and the batch example: the project keeps its own version of
+  // each one.
   copyIfMissing(
     path.join(TEMPLATE_DIR, 'fixtures', 'pages.ts'),
     path.join(projectRoot, 'fixtures', 'pages.ts'),
@@ -104,6 +131,11 @@ export function scaffold(projectRoot: string): void {
   copyIfMissing(
     path.join(TEMPLATE_DIR, '.github', 'workflows', 'test.yml'),
     path.join(projectRoot, '.github', 'workflows', 'test.yml'),
+  );
+  // The batch example: the guides tell the user to run it.
+  copyIfMissing(
+    path.join(TEMPLATE_DIR, 'scopes-batch.json'),
+    path.join(projectRoot, 'scopes-batch.json'),
   );
 
   logger.success('Project scaffolded successfully.');
@@ -135,25 +167,31 @@ function copyIfMissing(from: string, to: string): void {
 }
 
 /**
- * Install the templates of `src` into `dest`.
+ * Install the templates of `sources` into `dest`.
  * A file the user changed is kept; the path of the new template is printed instead.
  * A file whose template is gone is removed, unless the user changed it.
+ *
+ * The sources share one manifest: a file of one source is never removed
+ * because another source does not carry it.
  */
-function installTemplates(src: string, dest: string): void {
+function installTemplates(sources: TemplateSource[], dest: string): void {
   const manifestPath = path.join(dest, MANIFEST);
   const installed = readManifest(manifestPath);
   const next: Record<string, string> = {};
 
-  const walk = (from: string, to: string, rel: string): void => {
+  const walk = (source: TemplateSource, from: string, to: string, rel: string): void => {
     fs.mkdirSync(to, { recursive: true });
 
     for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
+      const key = rel ? path.join(rel, entry.name) : entry.name;
+      // A source can name the entries it carries; the rest is left alone.
+      if (rel === '' && source.only && !source.only.includes(entry.name)) continue;
+
       const fromPath = path.join(from, entry.name);
       const toPath = path.join(to, entry.name);
-      const key = rel ? path.join(rel, entry.name) : entry.name;
 
       if (entry.isDirectory()) {
-        walk(fromPath, toPath, key);
+        walk(source, fromPath, toPath, key);
         continue;
       }
 
@@ -178,7 +216,7 @@ function installTemplates(src: string, dest: string): void {
     }
   };
 
-  walk(src, dest, '');
+  for (const source of sources) walk(source, source.dir, dest, '');
 
   // Templates that no longer exist are removed, unless the user changed them.
   for (const key of Object.keys(installed)) {

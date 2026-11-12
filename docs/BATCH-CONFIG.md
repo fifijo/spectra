@@ -116,6 +116,8 @@ Only `scopes` is required:
 
 ## Usage
 
+`spectra --init` writes an example `scopes-batch.json` into your project.
+
 ```bash
 # Run with batch config (URL from JSON)
 npx spectra-test-automation --batch scopes-batch.json
@@ -140,7 +142,11 @@ The batch runner will:
 - ✅ Run each scope one after another
 - ✅ Continue with the remaining scopes when one fails
 - ✅ Report how many scopes failed at the end
-- ✅ Keep the Plan and Healing Report of every scope under `.spectra/output/scopes/<number>-<name>/`
+- ✅ Keep the Plan and Healing Report of every scope under `.spectra/output/scopes/<number>-<slug>/`
+
+The folder is `<number>-<slug>`: the Scope's name, lowercased, with every run
+of non-alphanumeric characters replaced by `-` — a Scope named "Login Form" is
+kept in `1-login-form/`.
 
 ## Notes
 

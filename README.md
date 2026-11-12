@@ -284,7 +284,8 @@ npx spectra-test-automation --url http://localhost:5173 --file SCOPE.md
 
 ### Multiple Scopes (Batch Mode)
 
-Run several scopes one after another from a JSON config:
+`spectra --init` writes an example `scopes-batch.json` into your project.
+Edit it, or write your own:
 
 ```bash
 npx spectra-test-automation --batch scopes-batch.json
