@@ -30,19 +30,19 @@ advisor.
 | 012 | The publish runs the quality gate first | P3 | S | 011 | DONE |
 | 013 | The templates and the docs stop contradicting the repo | P3 | S | — | DONE |
 | 014 | `--init` scaffolds a seed spec, so the first documented command works | P1 | S | — | DONE |
-| 015 | A git install produces a package with a working `spectra` binary | P1 | S | — | TODO |
+| 015 | A git install produces a package with a working `spectra` binary | P1 | S | — | DONE |
 | 016 | `--init` scaffolds a CI workflow a consumer can actually run | P2 | M | — | DONE |
 | 017 | The Generator template uses only the locators its own gate allows | P1 | M | — | DONE |
-| 018 | The Healer template obeys the CI/Healer policy it ships with | P1 | S | — | TODO |
-| 019 | The gate documents review the Plan the Spectrum actually writes | P2 | S | — | TODO |
+| 018 | The Healer template obeys the CI/Healer policy it ships with | P1 | S | — | DONE |
+| 019 | The gate documents review the Plan the Spectrum actually writes | P2 | S | — | DONE |
 | 020 | The scope file's page and exclusions reach the agents | P2 | M | — | TODO |
-| 021 | The repo's own agent-workflow skills describe the code that exists | P1 | S | — | TODO |
-| 022 | The README describes what the tool actually does | P1 | S | 016 | TODO |
-| 023 | The published programmatic API is documented | P2 | S | — | TODO |
+| 021 | The repo's own agent-workflow skills describe the code that exists | P1 | S | — | DONE |
+| 022 | The README describes what the tool actually does | P1 | S | 016 | DONE |
+| 023 | The published programmatic API is documented | P2 | S | — | DONE |
 | 024 | One tag vocabulary, in every document that lists tags | P2 | S | — | DONE |
 | 025 | The CI/Healer policy matches the workflow it describes | P2 | S | — | DONE |
 | 026 | The Generator's own samples pass the gate they are reviewed against | P2 | M | 017 | DONE |
-| 027 | A scaffolded project gets the examples the guides tell it to run | P2 | M | — | TODO |
+| 027 | A scaffolded project gets the examples the guides tell it to run | P2 | M | — | DONE |
 | 028 | The shipped CI policy and Generator Gate say what the code does | P1 | S | — | DONE |
 | 029 | The README stops claiming the Healer is scoped | P2 | S | — | DONE |
 | 030 | `--init` adds the ignore rules a Spectra project needs | P1 | S | — | DONE |
@@ -233,13 +233,16 @@ abandoned)
   pass, and the closing note it asks for is the first bullet of this section.
 - **Plan 015 is probably closable.** `prepare: pnpm run build` exists at HEAD
   but not at `660399d`, the commit the plan was written against
-  (`git show 660399d:package.json | grep prepare` is empty). Verify one git
-  install, then mark it DONE or REJECTED.
+  (`git show 660399d:package.json | grep prepare` is empty). It was verified
+  and closed later the same day: the install works, but pnpm 10 needs
+  `onlyBuiltDependencies` in the consumer's `pnpm-workspace.yaml`.
 - **Plan 022 is largely overtaken by `b938c32`**, which rewrote the README.
-  Check its remaining claims before executing it; plan 029 replaces its
-  Healer-scoping claim.
-- **Plans 018, 019, 020, 021, 023 and 027 still reproduce** at `98a6d24`
-  (spot-checked against the live code). They are not covered by 028–032.
+  Its remaining claims were executed later the same day — see "Plans 018–027
+  as executed" below; plan 029 replaced its Healer-scoping claim.
+- **Plans 018, 019, 021, 022, 023 and 027 still reproduced** at `98a6d24`
+  (spot-checked against the live code). They were executed later the same day —
+  see "Plans 018–027 as executed" below. Plan 020 is the one that stays open:
+  it is a code change, not a documentation fix.
 
 ### Plans 028–032 as executed (2026-11-12)
 
@@ -289,6 +292,49 @@ commits after `ae9652c`:
 7. Every native-mode run rewrote the user's `.gitignore`, because `scaffold()`
    calls the ignore helper. The helper is called by `--init` only, so a run
    leaves the user's files alone.
+
+### Plans 018–027 as executed (2026-11-12)
+
+Six documentation plans and a sweep of every document in the repository,
+executed on branch `advisor/docs-018-027` and fast-forwarded into `main` as
+eight commits: `85437c6` (018, the Healer template obeys the policy),
+`b262500` (019, the gate documents review the Plan the Spectrum writes),
+`a52476e` (021, the agent skills match the code), `82bd889` (022, the README),
+`d253407` (023, the programmatic API), `c83444f` (027, a scaffolded project
+gets the examples its guides tell it to run), `60f7988` (the architecture
+blueprint, audited claim by claim against the code) and `d4016f8` (the final
+sweep: the remaining false claims, the vocabulary CONTEXT.md fixes, and a
+changeset for the batch).
+
+What the sweep changed beyond the plans:
+
+- **`Project_Architecture_Blueprint.md`** had 21 false or missing claims —
+  "six agent CLIs" (five exist plus `manual`), the snapshot taken per run
+  (it is per Scope), a `Snapshot` of mtimes (it holds a fingerprint), the
+  release chain ending in `changeset publish` (it ends in `publish:package`),
+  the shipped Playwright config having a `webServer` (only this repository's
+  does), line counts, and the words CONTEXT.md reserves for the Spectrum.
+- **`docs/PUBLISHING.md`** pointed at `npm publish` instead of
+  `pnpm run release`, and at a scoped package name that does not exist.
+- **`docs/CI-CD.md`** now carries the triggers and the artifact uploads of
+  the workflow `spectra --init` actually writes.
+- **Plan 015 is closed with a caveat**: a git install works, but pnpm 10 only
+  runs a dependency's build script when the project allows it, so the consumer
+  needs `onlyBuiltDependencies: ["spectra-test-automation"]` in
+  `pnpm-workspace.yaml`. Verified end to end in a scratch directory: the
+  install builds the package and `node_modules/.bin/spectra` runs. The README,
+  the publishing guide, the quick reference and the walkthrough now say so.
+  npm 10.9.3 cannot prepare a git dependency at all; the docs use pnpm.
+- **Plan 020 stays open**: it is a code change (the scope file's
+  `**Page URL**` and `## Out of Scope` sections are never read), not a
+  documentation fix.
+- **A changeset** (`.changeset/calm-otters-listen.md`) records the batch for
+  the next release.
+
+All checks green at `d4016f8`: `pnpm check` (63 files), `pnpm typecheck`,
+`pnpm typecheck:test`, `pnpm build`, `pnpm test:unit` → 14 files, 199 tests
+pass. The Playwright suite (18 tests) was unaffected: no generated code, page
+object or config changed.
 
 ## Direction notes (not plans)
 
