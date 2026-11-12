@@ -424,6 +424,61 @@ The trust boundary is the project folder:
 
 ---
 
+## 🧩 Programmatic API
+
+The package is also a library: `spectra-test-automation` exports what the CLI
+does, so a Spectrum can be driven from Node — a CI script, your own CLI, or
+another tool.
+
+```typescript
+import { run, type SpectraOptions } from 'spectra-test-automation';
+
+const options: SpectraOptions = {
+  url: 'http://localhost:5173',
+  page: '/checkout',
+  scope: 'payment form',
+};
+
+const ok = await run(options);
+if (!ok) {
+  // the run failed — `run()` never exits the process
+  process.exitCode = 1;
+}
+```
+
+The examples are ESM TypeScript (the package ships ESM only) and need
+`@playwright/test`, a peer dependency:
+
+```bash
+pnpm add -D spectra-test-automation @playwright/test
+```
+
+| Export | What it is |
+|--------|------------|
+| `run(options?)` | Runs the Spectrum. Returns `Promise<boolean>` — `false` when the run failed. It never calls `process.exit`, so the caller stays in control. |
+| `SpectraOptions` | The options object — one field per CLI flag: `url`, `page`, `scope`, `file`, `batch`, `manual`, `mode`, `init`, `mcp`, `debug`. The [CLI Options](#-configuration) table says what each one does. |
+| `detectMode(forceManual?, requested?)` | The Mode that is available: `cursor-agent`, `claude-code`, `codex`, `opencode`, `gemini` or `manual`. `true` forces `manual`, a name asks for that Mode. Throws when the named Mode is unknown or its CLI is not installed. |
+| `CliMode` | The type of a Mode name. |
+| `createScopeContext(path, scope)` | Writes the scope context file an Agent reads. `scope` is `{ url, page?, scope?, file? }`. |
+| `DEFAULT_OUTPUT_DIR` | `.spectra/output` — where a run writes its results. |
+| `TEMPLATE_DIR` | The installed package's `templates/` directory: the agent templates, the Playwright config and the MCP configs. |
+
+`run()` works in the current working directory: it installs the agent
+templates in `.spectra/agents/` and writes the results to `.spectra/output/`
+there.
+
+```typescript
+import { detectMode } from 'spectra-test-automation';
+
+const mode = detectMode(); // 'cursor-agent' | 'claude-code' | 'codex' | 'opencode' | 'gemini' | 'manual'
+```
+
+`run({ mcp: true })` speaks JSON-RPC on stdin and stdout and blocks until the
+host closes it. It cannot be combined with `init`, `batch`, `mode` or
+`manual` — `run()` refuses the combination and returns `false`.
+
+---
+
 ## 📚 Documentation
 
 | Document | What it covers |

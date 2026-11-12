@@ -209,6 +209,22 @@ is timing-dependent). The Generator never emits them.
 
 ---
 
+## Programmatic API
+
+```typescript
+import { run, type SpectraOptions } from 'spectra-test-automation';
+
+const options: SpectraOptions = { url: 'http://localhost:5173', scope: 'payment form' };
+const ok = await run(options);
+```
+
+`run(options?: SpectraOptions): Promise<boolean>` — `false` when the run
+failed. It never calls `process.exit`. Also exported: `detectMode(forceManual?,
+requested?)`, `CliMode`, `createScopeContext(path, scope)`,
+`DEFAULT_OUTPUT_DIR`, `TEMPLATE_DIR`. See the [README](../README.md#-programmatic-api).
+
+---
+
 <div align="center">
 
 ◐ ◑ ◒
