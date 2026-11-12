@@ -100,6 +100,24 @@ function warnOnUntrustedFile(cwd: string, file: string | undefined): void {
   logger.warn('Only use a file you trust.');
 }
 
+/**
+ * Flags that cannot be combined: the first branch of `run()` wins and the
+ * rest are never read, so the run would silently do something else.
+ */
+function flagConflict(options: SpectraOptions): string | null {
+  if (options.mcp) {
+    const ignored = [
+      options.batch && '--batch',
+      options.init && '--init',
+      options.mode && '--mode',
+      options.manual && '--manual',
+    ].filter((flag): flag is string => typeof flag === 'string');
+    if (ignored.length > 0) return `--mcp does not use ${ignored.join(', ')}`;
+  }
+  if (options.init && options.batch) return '--init does not use --batch';
+  return null;
+}
+
 /** Every scope file the run will read, once each. */
 function scopeFiles(options: SpectraOptions, scopes: ScopeDefinition[]): string[] {
   const files = new Set<string>();
@@ -179,6 +197,13 @@ function runAsMcpServer(cwd: string, options: SpectraOptions): boolean {
 
 export async function run(options: SpectraOptions = {}): Promise<boolean> {
   const cwd = process.cwd();
+
+  const conflict = flagConflict(options);
+  if (conflict) {
+    logger.error(`Error: ${conflict}.`);
+    logger.plain('Run spectra --help for usage information.');
+    return false;
+  }
 
   // --mcp: serve the Spectrum over MCP, so the model the user is already
   // talking to (in a chat or a CLI) does the Agent work.

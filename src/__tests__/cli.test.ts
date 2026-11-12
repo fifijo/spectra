@@ -103,6 +103,39 @@ describe('run', () => {
     delete process.env.SPECTRA_URL;
   });
 
+  describe('flags that contradict each other', () => {
+    it('refuses --mcp with --batch instead of ignoring the batch', async () => {
+      const ok = await run({ mcp: true, url: 'http://localhost:5173', batch: 'scopes.json' });
+
+      expect(ok).toBe(false);
+      expect(serveMcp).not.toHaveBeenCalled();
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('--batch'));
+    });
+
+    it('refuses --mcp with --mode, --manual or --init', async () => {
+      for (const extra of [{ mode: 'codex' }, { manual: true }, { init: true }]) {
+        vi.clearAllMocks();
+        const ok = await run({ mcp: true, url: 'http://localhost:5173', ...extra });
+        expect(ok).toBe(false);
+        expect(serveMcp).not.toHaveBeenCalled();
+      }
+    });
+
+    it('refuses --init with --batch', async () => {
+      const ok = await run({ init: true, batch: 'scopes.json' });
+
+      expect(ok).toBe(false);
+      expect(scaffold).not.toHaveBeenCalled();
+    });
+
+    it('still serves MCP when nothing conflicts', async () => {
+      const ok = await run({ mcp: true, url: 'http://localhost:5173' });
+
+      expect(ok).toBe(true);
+      expect(serveMcp).toHaveBeenCalled();
+    });
+  });
+
   describe('--init mode', () => {
     it('calls scaffold and returns without running agents', async () => {
       await run({ init: true });
