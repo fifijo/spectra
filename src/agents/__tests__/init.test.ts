@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PROJECT_DIRS, PROJECT_IGNORES } from '../../utils/layout.js';
-import { initAgents, scaffold } from '../init.js';
+import { ensureGitignore, initAgents, scaffold } from '../init.js';
 
 // We need to mock TEMPLATE_DIR to point to our test fixtures
 vi.mock('../../utils/constants.js', () => ({
@@ -388,7 +388,7 @@ describe('scaffold', () => {
     const projectRoot = makeTmpDir();
     tmpDirs.push(projectRoot);
 
-    scaffold(projectRoot);
+    ensureGitignore(projectRoot);
 
     const gitignore = fs.readFileSync(path.join(projectRoot, '.gitignore'), 'utf-8');
     for (const entry of PROJECT_IGNORES) expect(gitignore).toContain(entry);
@@ -400,7 +400,7 @@ describe('scaffold', () => {
     const file = path.join(projectRoot, '.gitignore');
     fs.writeFileSync(file, 'node_modules/\n.env\n', 'utf-8');
 
-    scaffold(projectRoot);
+    ensureGitignore(projectRoot);
 
     const gitignore = fs.readFileSync(file, 'utf-8');
     expect(gitignore).toContain('node_modules/');
@@ -408,13 +408,25 @@ describe('scaffold', () => {
     expect(gitignore).toContain('.spectra/output/');
   });
 
-  it('adds each ignore rule once, however often the project is scaffolded', () => {
+  it('does not add a rule the project already ignores', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+    const file = path.join(projectRoot, '.gitignore');
+    fs.writeFileSync(file, '.spectra/output/\n', 'utf-8');
+
+    ensureGitignore(projectRoot);
+
+    const gitignore = fs.readFileSync(file, 'utf-8');
+    expect(gitignore.match(/^\.spectra\/output\/$/gm)).toHaveLength(1);
+  });
+
+  it('adds each ignore rule once, however often it runs', () => {
     const projectRoot = makeTmpDir();
     tmpDirs.push(projectRoot);
 
-    scaffold(projectRoot);
+    ensureGitignore(projectRoot);
     const once = fs.readFileSync(path.join(projectRoot, '.gitignore'), 'utf-8');
-    scaffold(projectRoot);
+    ensureGitignore(projectRoot);
 
     expect(fs.readFileSync(path.join(projectRoot, '.gitignore'), 'utf-8')).toBe(once);
   });

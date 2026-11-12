@@ -98,6 +98,15 @@ describe('parseCliArgs', () => {
 
     delete process.env.SPECTRA_MODE;
   });
+
+  it('ignores SPECTRA_MODE in native mode, which has no agent CLI', () => {
+    process.env.SPECTRA_MODE = 'gemini';
+    withArgs(['--mcp']);
+
+    expect(parseCliArgs().mode).toBeUndefined();
+
+    delete process.env.SPECTRA_MODE;
+  });
   it('defaults init to false', () => {
     withArgs([]);
     expect(parseCliArgs().init).toBe(false);

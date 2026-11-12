@@ -8,7 +8,7 @@ import {
   SCOPE_CONTEXT,
   TEST_RESULTS,
 } from './agents/catalogue.js';
-import { initAgents, scaffold } from './agents/init.js';
+import { ensureGitignore, initAgents, scaffold } from './agents/init.js';
 import { agentLogName, runAgent } from './agents/runner.js';
 import { countChanged, missingOutputs, takeSnapshot } from './agents/verify.js';
 import { serveMcp } from './mcp/server.js';
@@ -106,9 +106,10 @@ function warnOnUntrustedFile(cwd: string, file: string | undefined): void {
  */
 function flagConflict(options: SpectraOptions): string | null {
   if (options.mcp) {
+    // Native mode scaffolds the project itself, so --init is redundant.
+    if (options.init) return '--mcp scaffolds the project itself, so --init is not needed';
     const ignored = [
       options.batch && '--batch',
-      options.init && '--init',
       options.mode && '--mode',
       options.manual && '--manual',
     ].filter((flag): flag is string => typeof flag === 'string');
@@ -217,6 +218,8 @@ export async function run(options: SpectraOptions = {}): Promise<boolean> {
     logger.info('Scaffolding Spectra project...');
     try {
       scaffold(cwd);
+      // The run's own output is not source: keep it out of the user's history.
+      ensureGitignore(cwd);
     } catch (err) {
       logger.error(err instanceof Error ? err.message : String(err));
       return false;

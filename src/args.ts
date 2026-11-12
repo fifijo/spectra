@@ -69,7 +69,9 @@ export function parseCliArgs(): SpectraOptions {
     file: values.file,
     batch: values.batch,
     manual: values.manual,
-    mode: values.mode ?? process.env.SPECTRA_MODE,
+    // The environment variable names the CLI the Agents run with; native mode
+    // has no agent CLI, so it must not turn into a conflict.
+    mode: values.mode ?? (values.mcp ? undefined : process.env.SPECTRA_MODE),
     init: values.init,
     mcp: values.mcp,
     debug: values.debug,

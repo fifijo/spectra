@@ -13,6 +13,7 @@ vi.mock('../agents/runner.js', async (importOriginal) => ({
 vi.mock('../agents/init.js', () => ({
   initAgents: vi.fn(),
   scaffold: vi.fn(),
+  ensureGitignore: vi.fn(),
 }));
 
 vi.mock('../utils/scope.js', () => ({
@@ -44,9 +45,9 @@ vi.mock('../utils/logger.js', async (importOriginal) => ({
 }));
 
 import { AGENTS } from '../agents/catalogue.js';
-import { initAgents, scaffold } from '../agents/init.js';
+import { ensureGitignore, initAgents, scaffold } from '../agents/init.js';
 import { runAgent } from '../agents/runner.js';
-import { run } from '../cli.js';
+import { run, type SpectraOptions } from '../cli.js';
 import { serveMcp } from '../mcp/server.js';
 import { detectMode } from '../utils/detect-mode.js';
 import { logger } from '../utils/logger.js';
@@ -113,11 +114,17 @@ describe('run', () => {
     });
 
     it('refuses --mcp with --mode, --manual or --init', async () => {
-      for (const extra of [{ mode: 'codex' }, { manual: true }, { init: true }]) {
+      const cases: [Partial<SpectraOptions>, string][] = [
+        [{ mode: 'codex' }, '--mode'],
+        [{ manual: true }, '--manual'],
+        [{ init: true }, '--init'],
+      ];
+      for (const [extra, flag] of cases) {
         vi.clearAllMocks();
         const ok = await run({ mcp: true, url: 'http://localhost:5173', ...extra });
         expect(ok).toBe(false);
         expect(serveMcp).not.toHaveBeenCalled();
+        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining(flag));
       }
     });
 
@@ -144,6 +151,12 @@ describe('run', () => {
       expect(runAgent).not.toHaveBeenCalled();
       expect(logger.banner).toHaveBeenCalled();
       expect(logger.success).toHaveBeenCalled();
+    });
+
+    it('adds the ignore rules, so the run output stays out of the history', async () => {
+      await run({ init: true });
+
+      expect(ensureGitignore).toHaveBeenCalledWith(tmpDir);
     });
 
     it('fails when the scaffold throws', async () => {
@@ -738,6 +751,12 @@ describe('run', () => {
       await run({ mcp: true, url: 'http://localhost:5173' });
 
       expect(runAgent).not.toHaveBeenCalled();
+    });
+
+    it("leaves the user's .gitignore alone: only --init writes it", async () => {
+      await run({ mcp: true, url: 'http://localhost:5173' });
+
+      expect(ensureGitignore).not.toHaveBeenCalled();
     });
   });
 
