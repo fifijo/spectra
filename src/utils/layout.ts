@@ -23,3 +23,17 @@ export const PROJECT_DIRS = [
   `.spectra/agents/${path.dirname(SCOPE_CONTEXT)}`,
   ...OUTPUT_DIRS.map((dir) => `.spectra/output/${dir}`),
 ];
+
+/**
+ * Paths a scaffolded project must not commit: the agent logs and run
+ * artefacts, the installed templates (reinstalled on every run), and the two
+ * manifests that remember which template each copied file came from.
+ */
+export const PROJECT_IGNORES = [
+  '.spectra/output/',
+  '.spectra/agents/',
+  'test-results/',
+  'playwright-report/',
+  'docs/.templates.json',
+  'specs/.templates.json',
+];

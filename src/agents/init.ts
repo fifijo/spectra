@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { PACKAGE_ROOT, TEMPLATE_DIR } from '../utils/constants.js';
-import { PROJECT_DIRS } from '../utils/layout.js';
+import { PROJECT_DIRS, PROJECT_IGNORES } from '../utils/layout.js';
 import { logger } from '../utils/logger.js';
 
 /** Remembers which template version each installed file came from. */
@@ -106,7 +106,26 @@ export function scaffold(projectRoot: string): void {
     path.join(projectRoot, '.github', 'workflows', 'test.yml'),
   );
 
+  // The run's own output is not source: keep it out of the user's history.
+  ensureGitignore(projectRoot);
+
   logger.success('Project scaffolded successfully.');
+}
+
+/**
+ * Add the ignore rules a Spectra project needs. A `.gitignore` the user
+ * already has is kept: only the missing lines are appended, once.
+ */
+function ensureGitignore(projectRoot: string): void {
+  const file = path.join(projectRoot, '.gitignore');
+  const current = fs.existsSync(file) ? fs.readFileSync(file, 'utf-8') : '';
+  const ignored = new Set(current.split(/\r?\n/).map((line) => line.trim()));
+  const missing = PROJECT_IGNORES.filter((entry) => !ignored.has(entry));
+  if (missing.length === 0) return;
+
+  const separator = current.length === 0 ? '' : current.endsWith('\n') ? '\n' : '\n\n';
+  const block = `# Spectra\n${missing.join('\n')}\n`;
+  fs.writeFileSync(file, `${current}${separator}${block}`, 'utf-8');
 }
 
 /**

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { PROJECT_DIRS } from '../../utils/layout.js';
+import { PROJECT_DIRS, PROJECT_IGNORES } from '../../utils/layout.js';
 import { initAgents, scaffold } from '../init.js';
 
 // We need to mock TEMPLATE_DIR to point to our test fixtures
@@ -382,5 +382,40 @@ describe('scaffold', () => {
     scaffold(projectRoot);
 
     expect(fs.readFileSync(path.join(workflowDir, 'test.yml'), 'utf-8')).toBe('mine');
+  });
+
+  it('ignores the output a run leaves behind', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+
+    scaffold(projectRoot);
+
+    const gitignore = fs.readFileSync(path.join(projectRoot, '.gitignore'), 'utf-8');
+    for (const entry of PROJECT_IGNORES) expect(gitignore).toContain(entry);
+  });
+
+  it('keeps the ignore rules the project already had', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+    const file = path.join(projectRoot, '.gitignore');
+    fs.writeFileSync(file, 'node_modules/\n.env\n', 'utf-8');
+
+    scaffold(projectRoot);
+
+    const gitignore = fs.readFileSync(file, 'utf-8');
+    expect(gitignore).toContain('node_modules/');
+    expect(gitignore).toContain('.env\n');
+    expect(gitignore).toContain('.spectra/output/');
+  });
+
+  it('adds each ignore rule once, however often the project is scaffolded', () => {
+    const projectRoot = makeTmpDir();
+    tmpDirs.push(projectRoot);
+
+    scaffold(projectRoot);
+    const once = fs.readFileSync(path.join(projectRoot, '.gitignore'), 'utf-8');
+    scaffold(projectRoot);
+
+    expect(fs.readFileSync(path.join(projectRoot, '.gitignore'), 'utf-8')).toBe(once);
   });
 });
