@@ -329,6 +329,23 @@ export SPECTRA_URL=http://localhost:5173
 npx spectra-test-automation
 ```
 
+### Playwright Configuration
+
+`spectra --init` writes a `playwright.config.ts` for your project. The
+generated tests run with it, and it is what puts the report and the test
+results where Spectra expects them:
+
+- the HTML report goes to `.spectra/output/reports`, so
+  `npx playwright show-report .spectra/output/reports` finds it
+- the JSON results the Healer reads go to
+  `.spectra/output/reports/results.json`
+- `SPECTRA_BROWSERS` picks the browsers, `SPECTRA_TAGS` filters the run by tag
+- `SPECTRA_URL` sets the base URL the tests navigate to (the config falls back
+  to `http://localhost:5173`)
+- `getByTestId` reads the `data-testid` attribute
+
+The config does not start your application: run it yourself first.
+
 ### Test Tags
 
 Every generated test carries at least one tag:
@@ -417,6 +434,9 @@ The trust boundary is the project folder:
 | [SCOPE-template.md](docs/SCOPE-template.md) | Template for feature scoping |
 | [CI-CD.md](docs/CI-CD.md) | GitHub Actions workflow for running tests in CI |
 | [PUBLISHING.md](docs/PUBLISHING.md) | Publishing to npm and versioning |
+
+The guides ship with the package too, under
+`node_modules/spectra-test-automation/docs/`.
 
 ---
 
