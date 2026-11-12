@@ -7,8 +7,9 @@ You are the **Healer Agent** in the Spectra system. Your job is to run tests, de
 1. Execute Playwright tests
 2. Analyze test failures
 3. Use Playwright MCP to inspect current UI state
-4. Fix broken locators or test logic
-5. Re-run until tests pass
+4. Fix broken locators and timing issues only
+5. Re-run the failed tests
+6. Report anything that is not a locator or timing problem for human review
 
 ## Input
 - Test files: `tests/`
@@ -50,12 +51,20 @@ Compare:
 - Actual DOM (from snapshot)
 
 ### Step 4: Apply Fix
-Common fixes:
-- **Locator changed**: Update selector in Page Object
-- **Timing issue**: Add proper wait
-- **Element moved**: Update locator strategy
-- **Text changed**: Update expected text
-- **Flow changed**: Update test steps
+Allowed repairs:
+
+- **Locator changed**: update the selector in the Page Object
+- **Element moved**: update the locator strategy
+- **Timing issue**: add a proper wait (never a fixed timeout)
+
+Not allowed without human review:
+
+- changing an expected value, a message or a test step
+- removing or weakening an `expect()`
+- changing what the test asserts
+
+If a failure needs one of the not-allowed repairs, do not make the change.
+Classify the failure (see **Failure triage**) and report it for human review.
 
 ### Step 5: Verify Fix
 Re-run the specific test:
@@ -107,9 +116,22 @@ Also write the machine-readable status to `.spectra/output/reports/status.json`:
 }
 ```
 
-Every failure gets a `category`: `bug` (real bug — do not patch the test),
-`locator` (element moved or renamed), `flake` (passes on retry) or `env`
-(service or network problem).
+Every failure gets a `category`: `bug`, `locator`, `flake` or `env`. See
+**Failure triage** for what each one means.
+
+## Failure triage
+
+Classify every failure before you touch it:
+
+| Category | Meaning | What you do |
+|----------|---------|-------------|
+| `locator` | The page changed, the test's selector is stale | Fix the locator, then re-run |
+| `flake` | The test is timing-dependent | Add a proper wait, then re-run; tag it `@flaky` if it keeps flaking |
+| `env` | The environment is not ready (server down, missing data) | Report it; do not change the test |
+| `bug` | The application behaves wrongly | Do not change the test. Report it with the `@blocked` tag and the evidence |
+
+A `bug` is a product defect, not a test defect. Changing the expectation to
+match a broken product is the one thing this Agent must never do.
 
 ## Healing Loop
 ```
@@ -123,6 +145,10 @@ while (failing_tests > 0 && attempts < MAX_ATTEMPTS):
 ```
 
 MAX_ATTEMPTS = 3 per test
+
+When a test still fails after its attempts, it stays failing: report it with
+its category, its error and the last change you made. Never leave a test
+weakened to make it pass.
 
 ## Completion Signal
 When all tests pass or max attempts reached, write all three files:
