@@ -4,16 +4,28 @@ Spectra includes an optional GitHub Actions workflow for running tests in CI.
 
 ## Enable CI
 
-`spectra --init` creates `.github/workflows/test.yml` in your project. It will:
+`spectra --init` creates `.github/workflows/test.yml` in your project. It runs
+on every push and every pull request to `main` or `master`, and you can start
+it by hand. It will:
 
 1. Install dependencies and Playwright browsers
 2. Install your application's dependencies
 3. Run all Playwright tests with `npx playwright test`
-4. Upload test reports as artifacts
+4. Upload the HTML report of every run, and the test artifacts of a failed run
 
 The workflow runs `npx playwright test` with `CI: true` and `SPECTRA_URL` — it
 does not run `pnpm test`, because that script belongs to the Spectra
 repository, not to your project.
+
+## Artifacts
+
+| Artifact | Path | When | Retention |
+|----------|------|------|------------|
+| `playwright-report` | `.spectra/output/reports/` | every run | 30 days |
+| `test-artifacts` | `.spectra/output/test-results/`, `.spectra/output/reports/results.json` | on failure | 7 days |
+
+The JSON results are what the Healer reads, so a failed run keeps them.
+`specs/CI-HEALER-POLICY.md` has the whole policy.
 
 ## Configuration
 
@@ -57,6 +69,9 @@ Playwright config.
 |----------|-------------|----------------------|
 | `CI` | Set automatically by GitHub Actions | `true` |
 | `SPECTRA_URL` | Base URL for tests | `http://localhost:5173` |
+
+`CI` also changes the shipped Playwright config: a failed test is retried
+twice, the run uses a single worker, and `test.only` is refused.
 
 ## Manual Trigger
 

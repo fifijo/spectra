@@ -16,7 +16,7 @@ Test files follow the pattern `src/**/__tests__/**/*.test.ts`:
 | Test File | What It Tests |
 |-----------|--------------|
 | `src/__tests__/args.test.ts` | `parseCliArgs()` — command line flags and modes |
-| `src/__tests__/cli.test.ts` | `run()` function: init mode, URL validation, agent pipeline, batch mode, summary |
+| `src/__tests__/cli.test.ts` | `run()` function: init mode, URL validation, a single Spectrum run, batch mode, summary |
 | `src/__tests__/index.test.ts` | The package's public exports |
 | `src/agents/__tests__/catalogue.test.ts` | The shipped templates against the Agent catalogue - run it after any change under `templates/agents/**` |
 | `src/agents/__tests__/init.test.ts` | `initAgents()` template copying, `scaffold()` directory creation |

@@ -1,7 +1,7 @@
 # Project Architecture
 
 ## Overview
-Spectra is a TypeScript CLI tool and library that orchestrates three AI agents (Planner, Generator, Healer) to automate Playwright test creation and maintenance.
+Spectra is a TypeScript CLI tool and library that runs the Spectrum - three AI Agents (Planner, Generator, Healer) - to automate Playwright test creation and maintenance.
 
 ## Entry Points
 
@@ -18,7 +18,7 @@ Spectra is a TypeScript CLI tool and library that orchestrates three AI agents (
 ### `src/cli.ts` - Library Module
 - Exports `run(options: SpectraOptions)` and the `SpectraOptions` type
 - Pure library module with **no side effects** on import
-- Handles: `--init` scaffolding, `--batch` mode, single-run agent pipeline
+- Handles: `--init` scaffolding, `--batch` mode, a single run of the Spectrum
 - `run()` is async and resolves to `true` when every agent succeeded
 - A batch keeps the plan and healing report of every scope; only the completion
   signals are cleared between scopes
@@ -31,7 +31,7 @@ Spectra is a TypeScript CLI tool and library that orchestrates three AI agents (
 ### Critical Invariant
 `src/index.ts` only imports from `cli.ts`, never from `bin.ts`. If this is broken, library consumers will get `ERR_PARSE_ARGS_UNKNOWN_OPTION` errors when importing the package.
 
-## Agent Pipeline
+## The Spectrum
 
 The `run()` function in `cli.ts` executes three agents one after another, waiting for
 each one to finish before starting the next:
@@ -77,7 +77,11 @@ Each agent creates a `.complete` file when done:
 
 ### `src/agents/init.ts`
 - `initAgents(projectRoot)` - copies templates from `templates/agents/` to `.spectra/agents/`
-- `scaffold(projectRoot)` - full project setup: creates dirs, copies agents, docs, fixtures
+- `scaffold(projectRoot)` - full project setup: creates dirs, copies agents, gate docs,
+  guides, fixtures, the Playwright config, both MCP configs, the seed spec, the CI
+  workflow and the batch example
+- `ensureGitignore(projectRoot)` - adds the missing ignore rules to the project's
+  `.gitignore`, never rewriting the lines that are already there
 - A template file the user changed is kept, not overwritten. `.templates.json` in the target
   folder records the hash of every installed template, so an edit is told from an old template.
 
@@ -111,8 +115,9 @@ Each agent creates a `.complete` file when done:
 - `DEFAULT_OUTPUT_DIR` - `.spectra/output`
 
 ### `src/utils/detect-mode.ts`
-- `detectMode(forceManual?)` - checks for `cursor-agent`, `claude`, `codex`,
-  `opencode` and `gemini` on the PATH, in that order
+- `detectMode(forceManual?, requested?)` - checks for `cursor-agent`, `claude`, `codex`,
+  `opencode` and `gemini` on the PATH, in that order; a Mode asked for by name wins
+  over the order
 - Returns: `'cursor-agent' | 'claude-code' | 'codex' | 'opencode' | 'gemini' | 'manual'`
 - Uses platform-aware command detection (`where` on Windows, `command -v` on Unix)
 
@@ -149,10 +154,10 @@ Shipped with the npm package and copied to the user's project on every run
 
 ## Specs (`specs/`)
 
-Pipeline gate documentation (review checklists):
+Spectrum gate documentation (review checklists):
 - `PLANNER-GATE.md` - Pre-flight checks and plan review checklist
 - `GENERATOR-GATE.md` - Assertion rules, tagging rules, code structure rules, PR process
-- `CI-HEALER-POLICY.md` - CI config, healer retry limits (max 3 per test, 5 total cycles), failure triage (bug vs locator drift vs flake vs env issue)
+- `CI-HEALER-POLICY.md` - CI config, healer retry limits (max 3 attempts per test, unbounded total cycles), failure triage (bug vs locator drift vs flake vs env issue)
 - `PILOT.md` - Verification pilot with 3 scenarios (full story, wrong locator, real regression)
 
 ## Devin Secrets Needed

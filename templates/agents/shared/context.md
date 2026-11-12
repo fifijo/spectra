@@ -2,7 +2,7 @@
 
 ## The Spectrum
 ```
-◐ PLANNER   → Explores app, creates test plan
+◐ PLANNER   → Explores app, creates the Plan
 ◑ GENERATOR → Reads plan, creates tests
 ◒ HEALER    → Runs tests, fixes failures
 ```
@@ -20,7 +20,7 @@
 │   │   ├── healer/           # Healer Agent
 │   │   └── shared/           # Shared context
 │   └── output/
-│       ├── plans/            # Test plans
+│       ├── plans/            # The Plan
 │       ├── tests/            # The Generator's completion signal
 │       ├── reports/          # Results & healing reports
 │       └── test-results/     # Playwright artifacts

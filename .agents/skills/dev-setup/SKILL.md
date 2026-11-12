@@ -54,7 +54,7 @@ No environment variables are required for development or building. Runtime varia
 - `src/` - TypeScript source code
 - `dist/` - compiled output (gitignored)
 - `templates/` - agent templates shipped with npm package
-- `specs/` - pipeline gate documentation
+- `specs/` - Spectrum gate documentation
 - `docs/` - user-facing documentation
 - `dummy-test-app/` - Vite app used as SUT in CI/E2E tests
 

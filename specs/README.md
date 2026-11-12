@@ -1,6 +1,6 @@
 # specs/
 
-This directory holds **human-readable Markdown plans** and **gate documentation** for the Spectra pipeline.
+This directory holds **human-readable Markdown plans** and **gate documentation** for the Spectrum.
 
 ## Contents
 

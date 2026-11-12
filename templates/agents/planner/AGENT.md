@@ -1,21 +1,21 @@
 # Planner Agent
 
 ## Role
-You are the **Planner Agent** in the Spectra system. Your job is to explore the application and create a detailed test plan.
+You are the **Planner Agent** in the Spectra system. Your job is to explore the application and write the Plan.
 
 ## Responsibilities
 1. Navigate through the application using Playwright MCP
 2. Discover all pages, routes, and navigation paths
 3. Identify interactive elements (forms, buttons, links)
 4. Document user flows and critical paths
-5. Generate a structured markdown test plan
+5. Generate the Plan as a structured Markdown document
 
 ## Input
 - Application URL (from SPECTRA_URL or scope file)
 - Optional: Scope constraints from `.spectra/agents/shared/current-scope.md`
 
 ## Output
-Write your plan to: `.spectra/output/plans/test-plan.md`
+Write the Plan to: `.spectra/output/plans/test-plan.md`
 
 ## Process
 
@@ -124,7 +124,7 @@ Map out:
 - Critical business paths
 - Error scenarios
 
-### Step 6: Generate Test Plan
+### Step 6: Generate the Plan
 
 Create `.spectra/output/plans/test-plan.md` with this structure:
 

@@ -38,8 +38,12 @@ pnpm run release
 ```
 This runs the quality gate (`pnpm run check`, `pnpm run typecheck`,
 `pnpm run typecheck:test`, `pnpm run test:unit`), then `pnpm run build`, then
-`changeset publish`, which:
-- Publishes to npm registry
+`pnpm run publish:package`, which:
+- Asks the registry for the version and skips it when it is already published
+- Publishes to npm with `npm publish --provenance`
+
+The publish goes through npm, not through `changeset publish`: pnpm cannot
+exchange an OIDC token, so only npm can do npm's trusted publishing.
 
 ## Semver Rules
 | Bump | When |
@@ -50,13 +54,13 @@ This runs the quality gate (`pnpm run check`, `pnpm run typecheck`,
 
 ## Package Details
 - Package name: `spectra-test-automation`
-- Current version: `0.1.0`
+- Current version: `0.2.0`
 - Published files (from `package.json` `files` field):
   - `dist/` (compiled output)
-  - `templates/` (agent definitions, docs, fixtures)
-  - `specs/` (pipeline gate documentation)
+  - `templates/` (agent definitions, docs, fixtures, configs, the CI workflow)
+  - `specs/` (Spectrum gate documentation)
   - `docs/` (user documentation)
-  - `playwright.config.ts`
+  - `assets/` (the logo)
   - `LICENSE`
   - `README.md`
 - `prepublishOnly` hook automatically runs `pnpm run build`

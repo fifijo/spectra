@@ -26,14 +26,14 @@ npx spectra-test-automation --url http://localhost:5173
 ## The Spectrum
 
 ```
-◐ PLANNER   → Explores app, creates test plan
+◐ PLANNER   → Explores app, creates the Plan
 ◑ GENERATOR → Reads plan, creates tests
 ◒ HEALER    → Runs tests, fixes failures
 ```
 
 ---
 
-## Detailed Flow
+## The Spectrum in detail
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -150,27 +150,35 @@ npx spectra-test-automation --url http://localhost:5173
 # In your project directory
 pnpm add -D spectra-test-automation @playwright/test
 
-# Scaffold project structure
+# Scaffold the project
 npx spectra-test-automation --init
 
 # Install Playwright browsers
 pnpm exec playwright install chromium
 ```
 
-Creates:
-- Playwright + Chromium
-- 3 agents (Planner, Generator, Healer)
-- MCP configuration
-- Seed spec (`tests/seed.spec.ts`, created by `spectra --init`)
-- Batch example (`scopes-batch.json`, created by `spectra --init`)
-- Guides (`docs/`, created by `spectra --init`)
-- `spectra` CLI (via `npx spectra-test-automation`)
+`spectra --init` creates:
+
+- the folders of a Spectra project: `pages/`, `tests/`, `fixtures/`, `specs/`,
+  `.spectra/agents/` and `.spectra/output/`
+- the 3 agents (Planner, Generator, Healer) in `.spectra/agents/`
+- the gate documents in `specs/`
+- the guides and the scope template in `docs/`
+- `playwright.config.ts`, `fixtures/pages.ts` and the seed spec
+  (`tests/seed.spec.ts`)
+- the MCP configurations (`.cursor/mcp.json` and `.mcp.json`)
+- the CI workflow (`.github/workflows/test.yml`)
+- the batch example (`scopes-batch.json`)
+- the ignore rules a run needs in `.gitignore`
 
 ### Option B: Install from Git
 
 ```bash
 pnpm add -D "git+https://github.com/fifijo/spectra.git" @playwright/test
 ```
+
+pnpm 10 asks you to allow the build script of a package installed from Git.
+See [PUBLISHING.md](PUBLISHING.md#install-from-git-bitbucket--github).
 
 ### Option C: Clone and develop locally
 
@@ -277,7 +285,7 @@ answers and that the page has a title.
 | `npx spectra-test-automation -u URL -p /page` | Single page focus |
 | `npx spectra-test-automation -u URL -s "feature"` | Feature scope |
 | `npx spectra-test-automation -u URL -f SCOPE.md` | Detailed scope file |
-| `npx spectra-test-automation -u URL -m` | Manual Cursor mode |
+| `npx spectra-test-automation -u URL -m` | Manual mode |
 | `npx spectra-test-automation -u URL --debug` | Enable debug output |
 | `npx spectra-test-automation -b FILE.json` | Run scopes from JSON config |
 | `npx playwright test` | Run all tests |
@@ -292,6 +300,7 @@ answers and that the page has a title.
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `SPECTRA_URL` | Base URL for tests | (none — required) |
+| `SPECTRA_MODE` | CLI the agents run with | (the first one found) |
 | `SPECTRA_BROWSERS` | Browsers to test | `chromium` |
 | `SPECTRA_TAGS` | Filter tests by tags | (all tests) |
 | `SPECTRA_DEBUG` | Enable debug output | (unset) |
@@ -404,12 +413,19 @@ spectra/
 ├── templates/                  # Shipped with the package
 │   ├── agents/                 # Agent definitions (Planner, Generator, Healer)
 │   ├── docs/                   # Scope template
-│   └── fixtures/               # Test fixture template
+│   ├── fixtures/               # Test fixture template
+│   ├── tests/                  # Seed spec template
+│   ├── config/                 # Playwright config template
+│   └── cursor/                 # MCP config template
 ├── specs/                      # Spectrum gate docs & Markdown plans
 ├── tests/                      # End-to-end & integration tests
 │   └── seed.spec.ts            # Environment readiness contract
 ├── docs/                       # Documentation
-│   └── SCOPE-template.md       # Scoping template
+│   ├── SCOPE-template.md       # Scoping template
+│   ├── BATCH-CONFIG.md         # Batch file schema
+│   ├── CI-CD.md                # The GitHub Actions workflow
+│   ├── QUICK-REFERENCE.md      # Commands, env vars, tags
+│   └── WALKTHROUGH.md          # Step-by-step guide
 ├── scopes-batch.json           # Batch config example (spectra --init writes one)
 ├── playwright.config.ts        # Playwright configuration
 ├── tsconfig.json               # TypeScript build config
@@ -417,6 +433,10 @@ spectra/
 ├── package.json                # npm package definition
 ├── .cursor/
 │   └── mcp.json                # MCP config for Cursor
+├── .mcp.json                   # MCP config for another host
+├── .github/
+│   └── workflows/
+│       └── test.yml            # The CI workflow (spectra --init writes one)
 ├── .spectra/                   # Generated via --init
 │   ├── agents/
 │   │   ├── planner/AGENT.md    # 🔵 Planner

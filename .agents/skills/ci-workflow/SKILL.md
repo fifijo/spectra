@@ -8,7 +8,7 @@ Spectra uses **GitHub Actions** for CI. The workflow file is `.github/workflows/
 - Pull requests targeting `main` or `master`
 - Manual trigger via `workflow_dispatch`
 
-## Pipeline Steps
+## Workflow Steps
 
 | Step | Command | Notes |
 |------|---------|-------|

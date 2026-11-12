@@ -98,19 +98,41 @@ Generates clean, maintainable code:
 # Install in your project
 pnpm add -D spectra-test-automation @playwright/test
 
-# Scaffold project structure
-# (creates playwright.config.ts, .cursor/mcp.json, specs/ gate docs, pages/, tests/, fixtures/)
+# Scaffold the project
 npx spectra-test-automation --init
 
 # Install Playwright browsers
 pnpm exec playwright install chromium
 ```
 
+`spectra --init` creates:
+
+- the folders of a Spectra project: `pages/`, `tests/`, `fixtures/`, `specs/`,
+  `.spectra/agents/` and `.spectra/output/`
+- the Agent templates in `.spectra/agents/`
+- the gate documents in `specs/`
+- the guides and the scope template in `docs/`
+- `playwright.config.ts`, `fixtures/pages.ts` and `tests/seed.spec.ts`
+- `.cursor/mcp.json` and `.mcp.json`
+- `.github/workflows/test.yml`
+- an example `scopes-batch.json`
+- the ignore rules a run needs in `.gitignore` — only the missing lines are
+  added, so a `.gitignore` you already have keeps yours
+
 #### Option B: Install from Git
 
 ```bash
 # Install directly from the repository
 pnpm add -D "git+https://github.com/fifijo/spectra.git" @playwright/test
+```
+
+pnpm 10 asks you to allow the build script of a package installed from Git,
+because the package has to build itself before it can be used. Add it to
+`onlyBuiltDependencies` in `pnpm-workspace.yaml`:
+
+```yaml
+onlyBuiltDependencies:
+  - "spectra-test-automation"
 ```
 
 #### Option C: Clone and develop locally
@@ -176,7 +198,7 @@ Runs tests, detects failures, inspects UI, and automatically fixes broken locato
 </tr>
 </table>
 
-### Agent Pipeline Flow
+### The Spectrum
 
 ```mermaid
 flowchart LR
@@ -484,7 +506,7 @@ host closes it. It cannot be combined with `init`, `batch`, `mode` or
 
 | Document | What it covers |
 |----------|----------------|
-| [WALKTHROUGH.md](docs/WALKTHROUGH.md) | Step-by-step guide with a detailed flow and examples |
+| [WALKTHROUGH.md](docs/WALKTHROUGH.md) | Step-by-step guide with the Spectrum in detail and examples |
 | [QUICK-REFERENCE.md](docs/QUICK-REFERENCE.md) | Commands, env vars, test tags, key files, troubleshooting |
 | [BATCH-CONFIG.md](docs/BATCH-CONFIG.md) | Batch JSON schema and examples |
 | [SCOPE-template.md](docs/SCOPE-template.md) | Template for feature scoping |
@@ -492,7 +514,8 @@ host closes it. It cannot be combined with `init`, `batch`, `mode` or
 | [PUBLISHING.md](docs/PUBLISHING.md) | Publishing to npm and versioning |
 
 The guides ship with the package too, under
-`node_modules/spectra-test-automation/docs/`.
+`node_modules/spectra-test-automation/docs/`, and `spectra --init` copies
+them into your project's `docs/` — next to the scope template.
 
 ---
 
@@ -504,9 +527,10 @@ Contributions are welcome!
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
 3. Install dependencies: `pnpm install`
 4. Build: `pnpm run build`
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+5. Check: `pnpm check && pnpm typecheck && pnpm typecheck:test && pnpm test:unit`
+6. Commit your changes (`git commit -m 'Add amazing feature'`)
+7. Push to the branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
 
 ---
 
