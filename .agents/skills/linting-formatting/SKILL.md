@@ -37,15 +37,15 @@ pnpm run check && pnpm run typecheck
 ## Biome Configuration (`biome.json`)
 
 ### File Scope
-Biome only scans these files:
-- `src/**`
-- `biome.json`
-- `vitest.config.ts`
-- `playwright.config.ts`
-- `tsconfig.json`
-- `tsconfig.test.json`
+Biome's scope is defined by `files.includes` in `biome.json` - read it
+rather than trusting this list. It currently covers `src/**`, `tests/**`,
+`pages/**`, `fixtures/**`, `templates/**` and the root config files
+(`biome.json`, `vitest.config.ts`, `playwright.config.ts`, `tsconfig.json`,
+`tsconfig.test.json`).
 
-Files outside these patterns (e.g., `templates/`, `docs/`, `tests/`) are **not** linted or formatted by Biome.
+`pnpm check` covers all of them: lint, format and the assists. A file
+outside that list is not checked - if you add one, add it to `biome.json`
+too.
 
 ### Formatter Settings
 - Indent: 2 spaces

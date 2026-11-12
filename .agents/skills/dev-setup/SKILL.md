@@ -43,7 +43,9 @@ pnpm run build
 
 ## Environment Variables
 No environment variables are required for development or building. Runtime variables:
-- `SPECTRA_URL` - target app URL (default: `http://localhost:5173`)
+- `SPECTRA_URL` - target app URL. The CLI requires it (`--url` or this
+  variable); the Playwright config defaults its `baseURL` to
+  `http://localhost:5173` for the tests themselves.
 - `SPECTRA_BROWSERS` - browsers to test (default: `chromium`)
 - `SPECTRA_TAGS` - test tag filter
 - `SPECTRA_DEBUG` - enable debug output

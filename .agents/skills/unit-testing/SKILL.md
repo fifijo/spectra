@@ -17,10 +17,16 @@ Test files follow the pattern `src/**/__tests__/**/*.test.ts`:
 |-----------|--------------|
 | `src/__tests__/args.test.ts` | `parseCliArgs()` — command line flags and modes |
 | `src/__tests__/cli.test.ts` | `run()` function: init mode, URL validation, agent pipeline, batch mode, summary |
+| `src/__tests__/index.test.ts` | The package's public exports |
+| `src/agents/__tests__/catalogue.test.ts` | The shipped templates against the Agent catalogue - run it after any change under `templates/agents/**` |
 | `src/agents/__tests__/init.test.ts` | `initAgents()` template copying, `scaffold()` directory creation |
 | `src/agents/__tests__/runner.test.ts` | `buildPrompt()` output, `runAgent()` mode dispatching |
+| `src/agents/__tests__/verify.test.ts` | `missingOutputs()`: what an Agent must have written for the run to count it |
+| `src/mcp/__tests__/server.test.ts` | The MCP server: the tools, the Agent order, the completion signal |
+| `src/utils/__tests__/batch.test.ts` | The Batch file parser |
 | `src/utils/__tests__/constants.test.ts` | Constants values and types (`PACKAGE_ROOT`, `TEMPLATE_DIR`, `DEFAULT_OUTPUT_DIR`) |
 | `src/utils/__tests__/detect-mode.test.ts` | `detectMode()` CLI tool detection logic |
+| `src/utils/__tests__/layout.test.ts` | The project and output folder lists |
 | `src/utils/__tests__/logger.test.ts` | Logger ANSI color output for each method |
 | `src/utils/__tests__/scope.test.ts` | `createScopeContext()` markdown generation |
 
@@ -48,6 +54,8 @@ pnpm run test:unit:coverage
       cyan: vi.fn(),
       banner: vi.fn(),
       separator: vi.fn(),
+      debug: vi.fn(),
+      prompt: vi.fn(),
     },
   }));
   ```

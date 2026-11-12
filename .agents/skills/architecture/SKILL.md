@@ -66,6 +66,15 @@ Each agent creates a `.complete` file when done:
 
 ## Key Source Modules
 
+### `src/agents/catalogue.ts`
+- The one description of every Agent: name, colour, emoji, inputs, outputs,
+  project outputs, the folders it has to write into (`writes`) and its
+  completion signal
+- Every path the CLI hands an Agent comes from here
+- `src/agents/__tests__/catalogue.test.ts` fails when a shipped `AGENT.md`
+  or `shared/context.md` disagrees with it - run it after any change under
+  `templates/agents/**` or to the catalogue
+
 ### `src/agents/init.ts`
 - `initAgents(projectRoot)` - copies templates from `templates/agents/` to `.spectra/agents/`
 - `scaffold(projectRoot)` - full project setup: creates dirs, copies agents, docs, fixtures
@@ -73,9 +82,28 @@ Each agent creates a `.complete` file when done:
   folder records the hash of every installed template, so an edit is told from an old template.
 
 ### `src/agents/runner.ts`
-- `buildPrompt(agent, instruction, completionPath, agentsDir)` - assembles the prompt string
-- `runAgent(options, agentsDir, debug?)` - async; dispatches to the correct runner and resolves when the agent is done
-- `AgentRunOptions` interface: `name`, `color`, `emoji`, `prompt`, `mode`, `outputDir`, `completionPath`
+- `buildPrompt(agent, ctx)` - assembles the prompt string
+- `runAgent(agent, ctx)` - async; dispatches to the mode's CLI and resolves
+  when the agent is done
+- `RunContext` interface: `mode`, `outputDir`, `agentsDir`, `debug`
+- Every path in the prompt comes from the Agent catalogue entry - the
+  prompt never names a path itself
+
+### `src/agents/verify.ts`
+- `missingOutputs(agent, outputDir, projectRoot, snapshot)` - the one rule that decides
+  whether an Agent did its job: every file in `outputs` must exist and every folder in
+  `writes` must hold a file the run created or changed
+- `projectPath(target)` - the path as the Agent sees it, relative to the project root
+- Both `cli.ts` and `mcp/server.ts` call it, so the two modes never disagree
+
+### `src/mcp/server.ts`
+- Serves the Spectrum over MCP (native mode, `--mcp`): `spectra_next` gives the host
+  model the brief of the next Agent, `spectra_done` finishes it, `spectra_status` says
+  where the run is
+- Nothing here calls a model - the model of the user's chat or CLI plays the Agents
+
+### `src/utils/batch.ts`
+- Parses a Batch file into Scope definitions
 
 ### `src/utils/constants.ts`
 - `PACKAGE_ROOT` - resolved root of the installed package
@@ -87,6 +115,10 @@ Each agent creates a `.complete` file when done:
   `opencode` and `gemini` on the PATH, in that order
 - Returns: `'cursor-agent' | 'claude-code' | 'codex' | 'opencode' | 'gemini' | 'manual'`
 - Uses platform-aware command detection (`where` on Windows, `command -v` on Unix)
+
+### `src/utils/layout.ts`
+- `PROJECT_DIRS` - the folders a scaffolded project gets
+- `OUTPUT_DIRS` - the folders a run writes into
 
 ### `src/utils/logger.ts`
 - Colored console logger using ANSI escape codes
@@ -107,6 +139,13 @@ Shipped with the npm package and copied to the user's project on every run
 - `templates/agents/shared/context.md` - Shared project context
 - `templates/docs/` - Scope template
 - `templates/fixtures/pages.ts` - Playwright fixture boilerplate
+- `templates/config/playwright.config.ts` - the Playwright config a scaffolded
+  project gets (no `webServer` block: the user's app is started by the user)
+- `templates/cursor/mcp.json` - the MCP config for Cursor: Playwright for the
+  Agents, Spectra for the host
+- `templates/.mcp.json` - the same MCP config for a host that is not Cursor
+- `templates/tests/seed.spec.ts` - the environment readiness spec
+- `templates/.github/workflows/test.yml` - the CI workflow a scaffolded project gets
 
 ## Specs (`specs/`)
 

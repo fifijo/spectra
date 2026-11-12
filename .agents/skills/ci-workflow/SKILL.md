@@ -19,11 +19,14 @@ Spectra uses **GitHub Actions** for CI. The workflow file is `.github/workflows/
 | 5. Unit tests | `pnpm test:unit` | Vitest |
 | 6. Install browsers | `pnpm exec playwright install --with-deps chromium` | |
 | 7. Install dummy-test-app deps | `pnpm install` (in `dummy-test-app/`) | |
-| 8. Start app | `pnpm dev &` (in `dummy-test-app/`) | Background process |
-| 9. Wait for app | `curl` health check, 30s timeout | Polls `http://localhost:5173` |
-| 10. Run E2E tests | `pnpm test` | Playwright |
-| 11. Upload report | `actions/upload-artifact@v4` | Always (pass or fail) |
-| 12. Upload traces | `actions/upload-artifact@v4` | On failure only |
+| 8. Run E2E tests | `pnpm test` | Playwright - it starts the dummy app itself through the `webServer` block in `playwright.config.ts` |
+| 9. Upload report | `actions/upload-artifact@v4` | Always (pass or fail) |
+| 10. Upload artifacts | `actions/upload-artifact@v4` | On failure only |
+
+Note: the app is **not** started by a workflow step. The `webServer` block
+in `playwright.config.ts` starts it and waits for
+`http://localhost:5173`; with `CI=true` it refuses to reuse a server that
+is already running.
 
 ## CI Environment Variables
 | Variable | Value |

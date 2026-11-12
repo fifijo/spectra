@@ -109,4 +109,6 @@ The seed spec is the environment readiness contract. It runs two tests, both tag
 The URL comes from `playwright.config.ts` (`SPECTRA_URL`, default `http://localhost:5173`); the spec reads no env var of its own.
 
 ## Devin Secrets Needed
-None required for basic E2E testing against the dummy-test-app. If testing against an authenticated app, you may need `SPECTRA_AUTH_USER` and `SPECTRA_AUTH_PASS`.
+None required for basic E2E testing against the dummy-test-app. Against an
+authenticated application, add your own authentication state — the package
+reads no authentication environment variables.
