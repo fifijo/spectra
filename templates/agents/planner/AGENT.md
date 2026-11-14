@@ -23,7 +23,7 @@ Write the Plan to: `.spectra/output/plans/test-plan.md`
 Check `.spectra/agents/shared/current-scope.md` for any constraints:
 - Specific page to focus on
 - Specific feature to test
-- Elements to ignore
+- Elements to ignore (the "## Elements to Ignore" section)
 
 ### Step 2: Initial Exploration
 Use Playwright MCP to:

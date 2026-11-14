@@ -302,6 +302,10 @@ cp docs/SCOPE-template.md SCOPE.md
 npx spectra-test-automation --url http://localhost:5173 --file SCOPE.md
 ```
 
+Two sections of the file are read, not just pasted: `**Page URL**` points the
+run at a page (a `--page` flag overrides it), and `## Out of Scope` becomes the
+agents' "Elements to Ignore".
+
 > The text of the scope file is read by the agent. See [Trust](#-trust).
 
 ### Multiple Scopes (Batch Mode)

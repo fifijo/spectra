@@ -35,7 +35,7 @@ advisor.
 | 017 | The Generator template uses only the locators its own gate allows | P1 | M | — | DONE |
 | 018 | The Healer template obeys the CI/Healer policy it ships with | P1 | S | — | DONE |
 | 019 | The gate documents review the Plan the Spectrum actually writes | P2 | S | — | DONE |
-| 020 | The scope file's page and exclusions reach the agents | P2 | M | — | TODO |
+| 020 | The scope file's page and exclusions reach the agents | P2 | M | — | DONE |
 | 021 | The repo's own agent-workflow skills describe the code that exists | P1 | S | — | DONE |
 | 022 | The README describes what the tool actually does | P1 | S | 016 | DONE |
 | 023 | The published programmatic API is documented | P2 | S | — | DONE |
@@ -327,7 +327,7 @@ What the sweep changed beyond the plans:
   npm 10.9.3 cannot prepare a git dependency at all; the docs use pnpm.
 - **Plan 020 stays open**: it is a code change (the scope file's
   `**Page URL**` and `## Out of Scope` sections are never read), not a
-  documentation fix.
+  documentation fix. — closed later the same day, see below.
 - **A changeset** (`.changeset/calm-otters-listen.md`) records the batch for
   the next release.
 
@@ -335,6 +335,34 @@ All checks green at `d4016f8`: `pnpm check` (63 files), `pnpm typecheck`,
 `pnpm typecheck:test`, `pnpm build`, `pnpm test:unit` → 14 files, 199 tests
 pass. The Playwright suite (18 tests) was unaffected: no generated code, page
 object or config changed.
+
+### Plan 020 as executed (2026-11-14)
+
+`src/utils/scope.ts` reads the scope file once and takes two things from it:
+the `**Page URL**` line becomes the page when no `--page` was given (the flag
+still wins), and the `## Out of Scope` section is lifted out of the pasted
+requirements into a `## Elements to Ignore` section — the name the Planner
+template asks for. Five new cases in `src/utils/__tests__/scope.test.ts` (204
+tests in total now).
+
+The plan was written against commit `660399d` and its excerpts had drifted;
+three things were done differently:
+
+- **The scope file's text is now fenced** as data the Agent tests, not orders
+  it follows (`src/utils/scope.ts:66-73`). The exclusions are fenced the same
+  way, so a scope file still cannot smuggle instructions into the context.
+- **The plan's regex for the section used `\Z`**, which is not a JavaScript
+  escape — it matches a literal "Z" and would have cut the section short. The
+  section is found by its heading and ends at the next one.
+- **A placeholder is not a page.** The template shipped `**Page URL**: /path`,
+  so a user who copied it and never filled the field in would have had the
+  run pointed at `/path`. The template now shows `[e.g., /checkout]`, and both
+  placeholders are ignored.
+
+`docs/SCOPE-template.md` and `templates/docs/SCOPE-template.md` stay
+byte-identical (the plan said a test compares them; there is none — the diff
+is checked by hand). The README's "Scope File" section now says which two
+sections are read.
 
 ## Direction notes (not plans)
 

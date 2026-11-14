@@ -16,8 +16,11 @@ Copy to `SCOPE.md` and customize.
 
 ## Location
 
-**Page URL**: /path
+**Page URL**: [e.g., /checkout]
 **Section**: [Which part of the page]
+
+This is the page the run is pointed at. A `--page` flag overrides it. Leave the
+placeholder as it is and the run covers the whole application.
 
 ---
 
@@ -58,6 +61,8 @@ Copy to `SCOPE.md` and customize.
 DO NOT test these (even if on same page):
 - Feature A
 - Feature B
+
+These are passed to the agents as "Elements to Ignore".
 
 ---
 

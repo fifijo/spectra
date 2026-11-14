@@ -181,6 +181,124 @@ describe('createScopeContext', () => {
     expect(fs.existsSync(outputPath)).toBe(true);
   });
 
+  it('takes the page from the scope file when the CLI gave none', () => {
+    const tmp = makeTmpDir();
+    tmpDirs.push(tmp);
+    const scopeFilePath = path.join(tmp, 'SCOPE.md');
+    fs.writeFileSync(scopeFilePath, '## Location\n\n**Page URL**: /checkout\n', 'utf-8');
+    const outputPath = path.join(tmp, 'scope.md');
+
+    createScopeContext(outputPath, {
+      url: 'http://localhost:5173',
+      file: scopeFilePath,
+    });
+
+    const content = fs.readFileSync(outputPath, 'utf-8');
+    expect(content).toContain('**Page**: /checkout');
+    expect(content).toContain('**Full URL**: http://localhost:5173/checkout');
+  });
+
+  it('prefers the CLI page over the scope file page', () => {
+    const tmp = makeTmpDir();
+    tmpDirs.push(tmp);
+    const scopeFilePath = path.join(tmp, 'SCOPE.md');
+    fs.writeFileSync(scopeFilePath, '**Page URL**: /checkout\n', 'utf-8');
+    const outputPath = path.join(tmp, 'scope.md');
+
+    createScopeContext(outputPath, {
+      url: 'http://localhost:5173',
+      page: '/login',
+      file: scopeFilePath,
+    });
+
+    const content = fs.readFileSync(outputPath, 'utf-8');
+    expect(content).toContain('**Page**: /login');
+    expect(content).not.toContain('**Page**: /checkout');
+  });
+
+  it('ignores a page the scope file never filled in', () => {
+    const tmp = makeTmpDir();
+    tmpDirs.push(tmp);
+    const scopeFilePath = path.join(tmp, 'SCOPE.md');
+    fs.writeFileSync(scopeFilePath, '**Page URL**: /path\n', 'utf-8');
+    const outputPath = path.join(tmp, 'scope.md');
+
+    createScopeContext(outputPath, {
+      url: 'http://localhost:5173',
+      file: scopeFilePath,
+    });
+
+    const content = fs.readFileSync(outputPath, 'utf-8');
+    expect(content).not.toContain('**Page**');
+  });
+
+  it('writes the out-of-scope section as elements to ignore', () => {
+    const tmp = makeTmpDir();
+    tmpDirs.push(tmp);
+    const scopeFilePath = path.join(tmp, 'SCOPE.md');
+    fs.writeFileSync(
+      scopeFilePath,
+      [
+        '## Elements to Test',
+        '',
+        '- Feature A',
+        '',
+        '## Out of Scope',
+        '',
+        'DO NOT test these (even if on same page):',
+        '- Feature B',
+        '',
+        '---',
+        '',
+        '## Test Data',
+        '',
+        'Valid input: xxx',
+      ].join('\n'),
+      'utf-8',
+    );
+    const outputPath = path.join(tmp, 'scope.md');
+
+    createScopeContext(outputPath, {
+      url: 'http://localhost:5173',
+      file: scopeFilePath,
+    });
+
+    const content = fs.readFileSync(outputPath, 'utf-8');
+    expect(content).toContain('## Elements to Ignore');
+    expect(content).toContain('Feature B');
+    // The divider that separates the sections is not part of the list.
+    const ignore = content.slice(
+      content.indexOf('## Elements to Ignore'),
+      content.indexOf('## Instructions'),
+    );
+    expect(ignore).not.toContain('---');
+    // The exclusions live in their own section, not in the requirements.
+    const requirements = content.slice(
+      content.indexOf('## Detailed Requirements'),
+      content.indexOf('## Elements to Ignore'),
+    );
+    expect(requirements).toContain('- Feature A');
+    expect(requirements).not.toContain('Feature B');
+  });
+
+  it('keeps a scope file with no exclusions whole', () => {
+    const tmp = makeTmpDir();
+    tmpDirs.push(tmp);
+    const scopeFilePath = path.join(tmp, 'SCOPE.md');
+    fs.writeFileSync(scopeFilePath, '# My Custom Scope\n- Test login', 'utf-8');
+    const outputPath = path.join(tmp, 'scope.md');
+
+    createScopeContext(outputPath, {
+      url: 'http://localhost:5173',
+      file: scopeFilePath,
+    });
+
+    const content = fs.readFileSync(outputPath, 'utf-8');
+    expect(content).toContain('## Detailed Requirements');
+    expect(content).toContain('- Test login');
+    expect(content).not.toContain('## Elements to Ignore');
+  });
+
   it('includes all sections when all options are provided', () => {
     const tmp = makeTmpDir();
     tmpDirs.push(tmp);
