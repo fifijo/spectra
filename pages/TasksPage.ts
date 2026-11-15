@@ -4,25 +4,31 @@ export class TasksPage {
   readonly page: Page;
   readonly heading: Locator;
   readonly addTaskButton: Locator;
-  readonly addTaskDialog: Locator;
-  readonly taskTitleInput: Locator;
-  readonly taskDescriptionInput: Locator;
-  readonly submitTaskButton: Locator;
-  readonly taskPrioritySelect: Locator;
-  readonly filterSelect: Locator;
-  readonly taskList: Locator;
+  readonly filterCombobox: Locator;
+  readonly taskCount: Locator;
+  readonly dialog: Locator;
+  readonly dialogTitleInput: Locator;
+  readonly dialogDescriptionInput: Locator;
+  readonly dialogPriorityCombobox: Locator;
+  readonly createTaskButton: Locator;
+  readonly cancelButton: Locator;
+  readonly taskCheckboxes: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    this.heading = page.getByRole('heading', { level: 1, name: 'Tasks' });
-    this.addTaskButton = page.getByTestId('add-task-button');
-    this.addTaskDialog = page.getByTestId('add-task-dialog');
-    this.taskTitleInput = page.getByTestId('task-title-input');
-    this.taskDescriptionInput = page.getByTestId('task-description-input');
-    this.submitTaskButton = page.getByTestId('submit-task-button');
-    this.taskPrioritySelect = page.getByTestId('task-priority-select');
-    this.filterSelect = page.getByTestId('filter-select');
-    this.taskList = page.getByTestId('task-list');
+    this.heading = page.getByRole('heading', { name: 'Tasks', level: 1 });
+    this.addTaskButton = page.getByRole('button', { name: /add task/i });
+    this.filterCombobox = page
+      .getByRole('combobox', { name: /all tasks|filter/i })
+      .or(page.getByRole('combobox').first());
+    this.taskCount = page.getByText(/\d+ tasks?/);
+    this.dialog = page.getByRole('dialog');
+    this.dialogTitleInput = this.dialog.getByLabel(/title/i);
+    this.dialogDescriptionInput = this.dialog.getByLabel(/description/i);
+    this.dialogPriorityCombobox = this.dialog.getByRole('combobox', { name: /priority/i });
+    this.createTaskButton = this.dialog.getByRole('button', { name: /create task/i });
+    this.cancelButton = this.dialog.getByRole('button', { name: /cancel/i });
+    this.taskCheckboxes = page.getByRole('checkbox');
   }
 
   async goto(): Promise<void> {
@@ -31,28 +37,5 @@ export class TasksPage {
 
   async openAddTaskDialog(): Promise<void> {
     await this.addTaskButton.click();
-    await this.addTaskDialog.waitFor({ state: 'visible' });
-  }
-
-  taskItem(taskId: number | string): Locator {
-    return this.page.getByTestId(`task-item-${taskId}`);
-  }
-
-  taskCheckbox(taskId: number | string): Locator {
-    return this.page.getByTestId(`task-checkbox-${taskId}`);
-  }
-
-  deleteTaskButton(taskId: number | string): Locator {
-    return this.page.getByTestId(`delete-task-${taskId}`);
-  }
-
-  async setFilter(label: string): Promise<void> {
-    await this.filterSelect.click();
-    await this.page.getByRole('option', { name: label }).click();
-  }
-
-  async setTaskPriority(label: string): Promise<void> {
-    await this.taskPrioritySelect.click();
-    await this.page.getByRole('option', { name: label, exact: true }).click();
   }
 }

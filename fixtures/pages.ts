@@ -1,13 +1,17 @@
 /**
- * Spectra page object fixtures. Prefer `import { test, expect } from '../fixtures/pages.js'`.
+ * Spectra Test Fixtures
+ *
+ * This file provides reusable page object fixtures for tests.
+ * Import from this file instead of '@playwright/test' for automatic
+ * page object instantiation.
  */
 
 import { test as base } from '@playwright/test';
-import { AppShellPage } from '../pages/AppShellPage.js';
 import { CheckoutPage } from '../pages/CheckoutPage.js';
 import { DashboardPage } from '../pages/DashboardPage.js';
 import { KanbanPage } from '../pages/KanbanPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
+import { NotFoundPage } from '../pages/NotFoundPage.js';
 import { NotificationsPage } from '../pages/NotificationsPage.js';
 import { ProductsPage } from '../pages/ProductsPage.js';
 import { SettingsPage } from '../pages/SettingsPage.js';
@@ -15,8 +19,8 @@ import { TasksPage } from '../pages/TasksPage.js';
 import { UsersPage } from '../pages/UsersPage.js';
 
 type PageFixtures = {
-  appShellPage: AppShellPage;
   dashboardPage: DashboardPage;
+  loginPage: LoginPage;
   tasksPage: TasksPage;
   productsPage: ProductsPage;
   checkoutPage: CheckoutPage;
@@ -24,15 +28,15 @@ type PageFixtures = {
   usersPage: UsersPage;
   notificationsPage: NotificationsPage;
   settingsPage: SettingsPage;
-  loginPage: LoginPage;
+  notFoundPage: NotFoundPage;
 };
 
 export const test = base.extend<PageFixtures>({
-  appShellPage: async ({ page }, use) => {
-    await use(new AppShellPage(page));
-  },
   dashboardPage: async ({ page }, use) => {
     await use(new DashboardPage(page));
+  },
+  loginPage: async ({ page }, use) => {
+    await use(new LoginPage(page));
   },
   tasksPage: async ({ page }, use) => {
     await use(new TasksPage(page));
@@ -55,8 +59,8 @@ export const test = base.extend<PageFixtures>({
   settingsPage: async ({ page }, use) => {
     await use(new SettingsPage(page));
   },
-  loginPage: async ({ page }, use) => {
-    await use(new LoginPage(page));
+  notFoundPage: async ({ page }, use) => {
+    await use(new NotFoundPage(page));
   },
 });
 

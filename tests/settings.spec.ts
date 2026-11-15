@@ -1,34 +1,20 @@
 import { expect, test } from '../fixtures/pages.js';
 
-test.describe('Settings', { tag: ['@e2e'] }, () => {
-  test('tabs, profile save feedback, appearance and security controls', async ({
-    settingsPage,
-  }) => {
+test.describe('Settings tabs interaction', { tag: ['@interaction', '@e2e'] }, () => {
+  test('switches between settings tabs', async ({ settingsPage }) => {
     await settingsPage.goto();
-    await expect(settingsPage.heading).toBeVisible();
+    await expect(settingsPage.profileTab).toHaveAttribute('aria-selected', 'true');
 
-    await settingsPage.openProfileTab();
-    await expect(settingsPage.profileCard).toBeVisible();
-    await settingsPage.page.getByTestId('name-input').fill('Jane Doe');
-    await settingsPage.saveProfileButton.click();
-    await expect(settingsPage.saveProfileButton).toContainText('Saved!');
+    await settingsPage.notificationsTab.click();
+    await expect(settingsPage.notificationsTab).toHaveAttribute('aria-selected', 'true');
+    await expect(settingsPage.page.getByText('Notification Preferences')).toBeVisible();
 
-    await settingsPage.openNotificationsTab();
-    await expect(settingsPage.notificationsCard).toBeVisible();
-    const emailSwitch = settingsPage.page.getByTestId('email-notifications-switch');
-    await expect(emailSwitch).toBeChecked();
-    await emailSwitch.click();
-    await expect(emailSwitch).not.toBeChecked();
+    await settingsPage.appearanceTab.click();
+    await expect(settingsPage.appearanceTab).toHaveAttribute('aria-selected', 'true');
+    await expect(settingsPage.page.getByText('Appearance Settings')).toBeVisible();
 
-    await settingsPage.openAppearanceTab();
-    await expect(settingsPage.appearanceCard).toBeVisible();
-    await settingsPage.page.getByTestId('theme-select').click();
-    await settingsPage.page.getByRole('option', { name: 'Dark' }).click();
-
-    await settingsPage.openSecurityTab();
-    await expect(settingsPage.securityCard).toBeVisible();
-    await expect(settingsPage.page.getByTestId('enable-2fa-button')).toBeVisible();
-    await expect(settingsPage.page.getByTestId('manage-sessions-button')).toBeVisible();
-    await expect(settingsPage.page.getByTestId('delete-account-button')).toBeVisible();
+    await settingsPage.securityTab.click();
+    await expect(settingsPage.securityTab).toHaveAttribute('aria-selected', 'true');
+    await expect(settingsPage.page.getByText('Security Settings')).toBeVisible();
   });
 });

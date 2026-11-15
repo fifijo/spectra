@@ -1,13 +1,16 @@
 import { expect, test } from '../fixtures/pages.js';
 
 test.describe('Dashboard', { tag: ['@smoke', '@e2e'] }, () => {
-  test('shows stats grid, overview, and recent sales', async ({ dashboardPage }) => {
+  test('loads with key metrics and recent sales', async ({ dashboardPage }) => {
     await dashboardPage.goto();
     await expect(dashboardPage.heading).toBeVisible();
-    await expect(dashboardPage.statsGrid).toBeVisible();
-    await expect(dashboardPage.statsGrid.getByTestId('stat-card-0')).toBeVisible();
-    await expect(dashboardPage.overviewCard).toBeVisible();
-    await expect(dashboardPage.recentSalesCard).toBeVisible();
-    await expect(dashboardPage.recentSalesCard.getByTestId('sale-item-0')).toBeVisible();
+    await expect(dashboardPage.page.getByText('Total Revenue')).toBeVisible();
+    await expect(dashboardPage.page.getByText('Subscriptions')).toBeVisible();
+    await expect(
+      dashboardPage.page.getByRole('heading', { name: 'Sales', exact: true }),
+    ).toBeVisible();
+    await expect(dashboardPage.page.getByText('Active Now')).toBeVisible();
+    await expect(dashboardPage.page.getByRole('heading', { name: 'Recent Sales' })).toBeVisible();
+    await expect(dashboardPage.page.getByText('Olivia Martin')).toBeVisible();
   });
 });

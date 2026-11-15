@@ -3,49 +3,45 @@ import type { Locator, Page } from '@playwright/test';
 export class SettingsPage {
   readonly page: Page;
   readonly heading: Locator;
-  readonly settingsTabs: Locator;
   readonly profileTab: Locator;
   readonly notificationsTab: Locator;
   readonly appearanceTab: Locator;
   readonly securityTab: Locator;
-  readonly saveProfileButton: Locator;
-  readonly profileCard: Locator;
-  readonly notificationsCard: Locator;
-  readonly appearanceCard: Locator;
-  readonly securityCard: Locator;
+  readonly fullNameInput: Locator;
+  readonly emailInput: Locator;
+  readonly companyInput: Locator;
+  readonly bioInput: Locator;
+  readonly saveChangesButton: Locator;
+  readonly themeCombobox: Locator;
+  readonly languageCombobox: Locator;
+  readonly timezoneCombobox: Locator;
+  readonly deleteAccountButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    this.heading = page.getByRole('heading', { name: 'Settings' });
-    this.settingsTabs = page.getByTestId('settings-tabs');
-    this.profileTab = page.getByTestId('profile-tab');
-    this.notificationsTab = page.getByTestId('notifications-tab');
-    this.appearanceTab = page.getByTestId('appearance-tab');
-    this.securityTab = page.getByTestId('security-tab');
-    this.saveProfileButton = page.getByTestId('save-profile-button');
-    this.profileCard = page.getByTestId('profile-card');
-    this.notificationsCard = page.getByTestId('notifications-card');
-    this.appearanceCard = page.getByTestId('appearance-card');
-    this.securityCard = page.getByTestId('security-card');
+    this.heading = page.getByRole('heading', { name: 'Settings', level: 1 });
+    this.profileTab = page.getByRole('tab', { name: /profile/i });
+    this.notificationsTab = page.getByRole('tab', { name: /notifications/i });
+    this.appearanceTab = page.getByRole('tab', { name: /appearance/i });
+    this.securityTab = page.getByRole('tab', { name: /security/i });
+    this.fullNameInput = page.getByLabel(/full name/i);
+    this.emailInput = page.getByLabel(/email/i);
+    this.companyInput = page.getByLabel(/company/i);
+    this.bioInput = page.getByLabel(/bio/i);
+    this.saveChangesButton = page.getByRole('button', { name: /save changes/i });
+    this.themeCombobox = page
+      .getByRole('combobox', { name: /theme/i })
+      .or(page.getByLabel(/theme/i));
+    this.languageCombobox = page
+      .getByRole('combobox', { name: /language/i })
+      .or(page.getByLabel(/language/i));
+    this.timezoneCombobox = page
+      .getByRole('combobox', { name: /timezone/i })
+      .or(page.getByLabel(/timezone/i));
+    this.deleteAccountButton = page.getByRole('button', { name: /delete account/i });
   }
 
   async goto(): Promise<void> {
     await this.page.goto('/settings');
-  }
-
-  async openProfileTab(): Promise<void> {
-    await this.profileTab.click();
-  }
-
-  async openNotificationsTab(): Promise<void> {
-    await this.notificationsTab.click();
-  }
-
-  async openAppearanceTab(): Promise<void> {
-    await this.appearanceTab.click();
-  }
-
-  async openSecurityTab(): Promise<void> {
-    await this.securityTab.click();
   }
 }

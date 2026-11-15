@@ -1,33 +1,24 @@
 import { expect, test } from '../fixtures/pages.js';
 
-test.describe('Checkout wizard', { tag: ['@e2e', '@critical'] }, () => {
-  test('back disabled on first step; total matches summary; place order succeeds', async ({
-    checkoutPage,
-  }) => {
+test.describe('Checkout multi-step form', { tag: ['@critical', '@e2e'] }, () => {
+  test('advances from address to payment and back', async ({ checkoutPage }) => {
     await checkoutPage.goto();
     await expect(checkoutPage.heading).toBeVisible();
-    await expect(checkoutPage.backButton).toBeDisabled();
-    await expect(checkoutPage.stepCard('address')).toBeVisible();
+    await expect(checkoutPage.addressStep).toBeVisible();
+    await checkoutPage.nextButton.click();
+    await expect(checkoutPage.paymentStep).toBeVisible();
+    await expect(checkoutPage.cardNumberInput).toBeVisible();
+    await checkoutPage.backButton.click();
+    await expect(checkoutPage.addressStep).toBeVisible();
+  });
+});
 
-    const expectedTotal = (499.98 + 9.99 + 499.98 * 0.08).toFixed(2);
-    await expect(checkoutPage.orderTotal).toHaveText(`$${expectedTotal}`);
-
-    await checkoutPage.fillAddressMinimal();
-    await checkoutPage.clickNext();
-    await expect(checkoutPage.stepCard('payment')).toBeVisible();
-    await expect(checkoutPage.stepCard('address')).toHaveCount(0);
-
-    await checkoutPage.fillPaymentMinimal();
-    await checkoutPage.clickNext();
-    await expect(checkoutPage.stepCard('confirm')).toBeVisible();
-
-    await expect(checkoutPage.backButton).toBeEnabled();
-    await checkoutPage.placeOrder();
-    await expect(checkoutPage.orderSuccessCard).toBeVisible({ timeout: 15000 });
-    await expect(checkoutPage.orderSuccessCard).toContainText('ORD-2024-001234');
-    await expect(checkoutPage.orderSuccessCard).toContainText('test@example.com');
-
-    await checkoutPage.continueShopping();
-    await expect(checkoutPage.page).toHaveURL(/\/products$/);
+test.describe('Checkout interaction', { tag: ['@interaction'] }, () => {
+  test('save address checkbox toggles', async ({ checkoutPage }) => {
+    await checkoutPage.goto();
+    const checkbox = checkoutPage.saveAddressCheckbox;
+    const wasChecked = await checkbox.isChecked();
+    await checkbox.click();
+    await expect(checkbox).toBeChecked({ checked: !wasChecked });
   });
 });

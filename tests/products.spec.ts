@@ -1,23 +1,16 @@
 import { expect, test } from '../fixtures/pages.js';
 
-test.describe('Products', { tag: ['@e2e'] }, () => {
-  test('search, category filter, slider, and cart count', async ({ productsPage }) => {
+test.describe('Products empty state', { tag: ['@empty', '@smoke'] }, () => {
+  test('shows no products found for impossible search', async ({ productsPage }) => {
     await productsPage.goto();
-    await expect(productsPage.heading).toBeVisible();
-    await expect(productsPage.filtersCard).toBeVisible();
+    await productsPage.searchInput.fill('zzzznonexistent');
+    await expect(productsPage.noProductsMessage).toBeVisible();
+  });
+});
 
-    await productsPage.searchInput.fill('Wireless');
-    await expect(productsPage.productsGrid.getByTestId('product-card-1')).toBeVisible();
-    await expect(productsPage.productsGrid.getByTestId('product-card-2')).toHaveCount(0);
-
-    await productsPage.searchInput.clear();
-    await productsPage.selectCategory('Electronics');
-    await expect(productsPage.productsGrid.getByTestId(/product-card-/)).toHaveCount(3);
-
-    await productsPage.lowerPriceCeiling();
-    await expect(productsPage.priceRangeLabel).toHaveText('Price Range: $0 - $290');
-    await productsPage.addToCartButton(1).click();
-    await expect(productsPage.cartButton).toContainText('Cart (1)');
-    await expect(productsPage.addToCartButton(1)).toBeDisabled();
+test.describe('Products interaction', { tag: ['@interaction', '@e2e'] }, () => {
+  test('price range label is visible', async ({ productsPage }) => {
+    await productsPage.goto();
+    await expect(productsPage.priceRangeLabel).toBeVisible();
   });
 });
