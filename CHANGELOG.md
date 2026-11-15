@@ -1,5 +1,75 @@
 # spectra-test-automation
 
+## 0.3.0
+
+### Minor Changes
+
+- [`d4016f8`](https://github.com/fifijo/spectra/commit/d4016f8a0d4f8ba3b566eae52c4d08ec41a32221) Thanks [@fifijo](https://github.com/fifijo)! - Make the templates and the documents true of what the code does.
+
+  - The Healer template now obeys the shipped CI/Healer policy: it repairs
+    locators and timing only, and hands expected values, messages and test
+    steps to a human.
+  - `spectra --init` writes a `.gitignore`, an example `scopes-batch.json` and
+    the four guides into the project.
+  - The gate documents review the Plan the Spectrum writes, at
+    `.spectra/output/plans/test-plan.md`.
+  - The CLI refuses a run whose flags contradict each other: `--mcp` with
+    `--batch`, `--init`, `--mode` or `--manual`, and `--init` with `--batch`.
+  - The programmatic API (`run()`, `detectMode()`, `createScopeContext()`) is
+    documented in the README and the quick reference.
+
+- [`0b2e7e4`](https://github.com/fifijo/spectra/commit/0b2e7e4af22bab733140ff36e8efba794b6e5f24) Thanks [@fifijo](https://github.com/fifijo)! - A run fails when the tests fail.
+
+  - The CLI reads the JSON report Playwright writes and exits non-zero when a
+    test is still failing, or when the Healer never ran the suite.
+    `SPECTRUM COMPLETE` now means the suite is green.
+  - A suite where every test was skipped is not green either: nothing was
+    proved, so the run fails with `NO TESTS PASSED`.
+  - A spec the Generator wrote has to assert something. The catalogue states the
+    rule and the run checks it, so a test that asserts nothing cannot pass the
+    Spectrum.
+  - Native mode (`--mcp`) exits with the same code when the host closes the
+    connection, and its last payload carries the counts.
+  - A run is green only when nothing failed and something passed: a suite where
+    every test was skipped has proved nothing.
+  - The run checks the Generator's work: a spec file without an assertion fails
+    the run, in every mode.
+  - The HTML report has a folder of its own (`.spectra/output/reports/html`).
+    The reporter wipes its output folder when a run starts, so the Healing Report
+    and `status.json` next to it survived every run before.
+  - The Generator runs the project's formatter and linter over the files it
+    wrote, so the suite passes the same checks as the rest of the project.
+  - The Agents are told how the browser tools are reached in their host, so a
+    missing MCP server is a gap in the Plan rather than a guess.
+  - The **Page URL** of a scope file is metadata the run already read: it is
+    dropped from the requirements, so it cannot contradict a `--page` flag.
+  - The documents are checked against the code: `pnpm test:unit` holds the
+    static claims, `pnpm verify:docs` runs them.
+  - Every Agent is pointed at the shared context, so the project layout it
+    describes is read by the Agents that write the code.
+  - The Healer produces the JSON report the run reads, so a project with its own
+    Playwright config can write it:
+    `npx playwright test --reporter=json > .spectra/output/reports/results.json`.
+  - The Healer produces that report, so a run that never ran the tests cannot
+    finish.
+  - The Healer runs only the specs this run wrote: in a Batch, a Scope no
+    longer repairs the tests of another Scope.
+  - A failing test keeps its video next to its screenshot and its trace, and
+    the Agents keep the screenshots they took in `.spectra/output/evidence/`.
+  - The Healer template runs `npx playwright test`, so a project that does not
+    use pnpm can still be healed.
+  - The Planner keeps a copy of the Plan in `specs/test-plan.md`, and the
+    Generator runs the specs it wrote before it finishes.
+
+- [`5143d07`](https://github.com/fifijo/spectra/commit/5143d074db98d82c3ae3cd9bb21da02f6bb461d9) Thanks [@fifijo](https://github.com/fifijo)! - Read the page and the exclusions from the scope file.
+
+  - A `**Page URL**: /path` line in the scope file now points the run at that
+    page. A `--page` flag still wins, and a placeholder the user never filled in
+    is ignored, so a copied template does not send the run to `/path`.
+  - The `## Out of Scope` section is lifted out of the pasted requirements and
+    handed to the Agents as `## Elements to Ignore`, which is what the Planner
+    template asks for.
+
 ## 0.2.0
 
 ### Minor Changes
