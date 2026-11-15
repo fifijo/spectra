@@ -294,6 +294,27 @@ test.describe('[Feature] password strength', { tag: ['@e2e'] }, () => {
 });
 ```
 
+### Step 7: Run What You Wrote (Required)
+
+Run the specs you just wrote, and fix them until they pass:
+```bash
+npx playwright test tests/<the file you wrote>.spec.ts
+```
+
+A spec that fails here is a locator, a fixture or an expectation you can still
+see and fix. Do not hand the Healer a test you know is broken.
+
+### Step 8: Make It Fit the Project
+
+Run the project's formatter and linter over the files you wrote, so the suite
+passes the same checks as the rest of the project:
+```bash
+pnpm check:fix
+```
+
+Use the command the project already has. If it has none, leave the code as it
+is.
+
 ## Locator Priority (IMPORTANT)
 1. `page.getByRole()` - Best for accessibility
 2. `page.getByLabel()` - Great for form fields

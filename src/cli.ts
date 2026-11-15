@@ -9,13 +9,21 @@ import {
   TEST_RESULTS,
 } from './agents/catalogue.js';
 import { ensureGitignore, initAgents, scaffold } from './agents/init.js';
+import { describeResults, isGreen, readResults } from './agents/results.js';
 import { agentLogName, runAgent } from './agents/runner.js';
-import { countChanged, missingOutputs, takeSnapshot } from './agents/verify.js';
+import {
+  changedFiles,
+  countChanged,
+  missingOutputs,
+  projectPath,
+  ruleBreaches,
+  takeSnapshot,
+} from './agents/verify.js';
 import { serveMcp } from './mcp/server.js';
 import { parseBatchConfig, type ScopeDefinition } from './utils/batch.js';
 import { DEFAULT_OUTPUT_DIR } from './utils/constants.js';
 import { type CliMode, detectMode } from './utils/detect-mode.js';
-import { OUTPUT_DIRS } from './utils/layout.js';
+import { OUTPUT_DIRS, TEST_ARTIFACTS } from './utils/layout.js';
 import { logger, setLogTarget } from './utils/logger.js';
 import { createScopeContext, type Scope } from './utils/scope.js';
 
@@ -47,13 +55,23 @@ function clean(outputDir: string, files: string[]): void {
 function cleanRun(outputDir: string): void {
   clean(outputDir, COMPLETION_SIGNALS);
   clean(outputDir, OUTPUT_ARTEFACTS);
-  // The test results of an earlier run: the Healer must not read them.
-  clean(outputDir, [TEST_RESULTS]);
   // The log of the last run of each Agent.
   clean(
     outputDir,
     AGENTS.map((agent) => agentLogName(agent.name)),
   );
+}
+
+/**
+ * What the run says about itself. The suite decides: a run that never ran the
+ * tests, or ran none that passed, is not a green run.
+ */
+function banner(ok: boolean, summary: ReturnType<typeof readResults>): string {
+  if (!ok) return '❌ SPECTRUM FAILED';
+  if (summary === null) return '⚠️ SPECTRUM COMPLETE - NO TEST RESULTS';
+  if (summary.failed > 0) return '⚠️ SPECTRUM COMPLETE - TESTS FAILING';
+  if (!isGreen(summary)) return '⚠️ SPECTRUM COMPLETE - NO TESTS PASSED';
+  return '✨ SPECTRUM COMPLETE';
 }
 
 /**
@@ -134,7 +152,7 @@ function scopeFiles(options: SpectraOptions, scopes: ScopeDefinition[]): string[
  * (in a chat or a CLI) does the Agent work. No agent CLI is started and the
  * host's model is the one that writes the files.
  */
-function runAsMcpServer(cwd: string, options: SpectraOptions): boolean {
+async function runAsMcpServer(cwd: string, options: SpectraOptions): Promise<boolean> {
   // stdout speaks JSON-RPC from here on: the log lines go to stderr.
   setLogTarget('stderr');
 
@@ -181,7 +199,9 @@ function runAsMcpServer(cwd: string, options: SpectraOptions): boolean {
   logger.plain('do the work it describes, then call spectra_done.');
   logger.plain('');
 
-  serveMcp(
+  // The host closes the connection when it is done: the run is green only when
+  // every test passed.
+  return serveMcp(
     {
       outputDir,
       agentsDir,
@@ -193,7 +213,6 @@ function runAsMcpServer(cwd: string, options: SpectraOptions): boolean {
     process.stdin,
     process.stdout,
   );
-  return true;
 }
 
 export async function run(options: SpectraOptions = {}): Promise<boolean> {
@@ -411,6 +430,9 @@ async function runScope(
         outputDir,
         agentsDir,
         debug: options.debug ?? false,
+        // The Agent that runs the suite runs the specs this run wrote: the rest
+        // of the suite belongs to the user.
+        only: agent.runsTests ? changedFiles(testsDir, snapshot, '.spec.ts') : undefined,
       });
     } catch (err) {
       logger.error(
@@ -422,15 +444,45 @@ async function runScope(
     const missing = missingOutputs(agent, outputDir, cwd, snapshot);
     if (missing.length > 0) {
       logger.error(`Agent ${agent.name} did not write ${missing.join(', ')}`);
+      const resultsPath = projectPath(path.join(outputDir, TEST_RESULTS));
+      if (missing.includes(resultsPath)) {
+        logger.error(
+          `The Playwright config has to write the JSON report to ${resultsPath}: the run reads it to know whether the tests passed.`,
+        );
+        logger.error(
+          `A config without that reporter can still produce it: npx playwright test --reporter=json > ${resultsPath}`,
+        );
+      }
       ok = false;
       break;
     }
+
+    const breaches = ruleBreaches(agent, cwd, snapshot);
+    if (breaches.length > 0) {
+      for (const breach of breaches) logger.error(`Agent ${agent.name} wrote ${breach}`);
+      ok = false;
+      break;
+    }
+
     if (scopeDir) preserve(agent, outputDir, scopeDir);
     logger.debug('cli', `${agent.name} complete`);
   }
 
+  // Playwright wipes its output folder at the top of every run, so the
+  // artifacts of this Scope have to be copied out before the next Scope runs.
+  if (scopeDir) {
+    const artifacts = path.join(outputDir, TEST_ARTIFACTS);
+    if (fs.existsSync(artifacts)) {
+      fs.cpSync(artifacts, path.join(scopeDir, TEST_ARTIFACTS), { recursive: true });
+    }
+  }
+
   // Summary
-  logger.separator('blue', ok ? '✨ SPECTRUM COMPLETE' : '❌ SPECTRUM FAILED');
+  // What the tests did: Playwright wrote these numbers, so a run cannot claim
+  // a green suite it never ran.
+  const summary = readResults(path.join(outputDir, TEST_RESULTS));
+  const green = isGreen(summary);
+  logger.separator('blue', banner(ok, summary));
 
   const pageCount = countChanged(pagesDir, snapshot, '.ts');
   const testCount = countChanged(testsDir, snapshot, '.spec.ts');
@@ -439,11 +491,13 @@ async function runScope(
   logger.plain(`  Page Objects: ${pageCount}`);
   logger.plain(`  Test files: ${testCount}`);
   logger.plain('');
+  logger.plain(`Results: ${describeResults(summary)}`);
+  logger.plain('');
   logger.plain('Commands:');
   logger.plain('  npx playwright test                                  Run all tests');
   logger.plain('  npx playwright test --ui                             Run with UI');
-  logger.plain('  npx playwright show-report .spectra/output/reports   View report');
+  logger.plain('  npx playwright show-report .spectra/output/reports/html   View report');
   logger.plain('');
 
-  return ok;
+  return ok && green;
 }

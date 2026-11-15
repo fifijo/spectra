@@ -7,10 +7,17 @@ import {
   SCOPE_CONTEXT,
 } from '../agents/catalogue.js';
 
+/** The folder Playwright writes the artifacts of a run into. */
+export const TEST_ARTIFACTS = 'test-results';
+
+/** The folder the Agents keep the screenshots and videos they took in. */
+const EVIDENCE = 'evidence';
+
 /** The folders the run writes into, relative to the output dir. */
 export const OUTPUT_DIRS = [
   ...new Set([...COMPLETION_SIGNALS, ...OUTPUT_ARTEFACTS].map((file) => path.dirname(file))),
-  'test-results',
+  TEST_ARTIFACTS,
+  EVIDENCE,
 ];
 
 /** The folders of a Spectra project, relative to the project root. */

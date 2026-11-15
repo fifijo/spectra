@@ -52,6 +52,16 @@ describe('buildPrompt', () => {
     expect(prompt).toContain('agents/shared/current-scope.md');
   });
 
+  it('points at the shared context every agent reads', () => {
+    const workDir = makeTmpDir();
+    tmpDirs.push(workDir);
+    process.chdir(workDir);
+
+    const prompt = buildPrompt(agentNamed('planner'), context(workDir));
+
+    expect(prompt).toContain('agents/shared/context.md');
+  });
+
   it('points at the definition of the agent', () => {
     const workDir = makeTmpDir();
     tmpDirs.push(workDir);
@@ -82,6 +92,33 @@ describe('buildPrompt', () => {
     const prompt = buildPrompt(agentNamed('healer'), context(workDir));
 
     expect(prompt).toContain('output/reports/.complete');
+  });
+
+  it('tells the agent that runs the suite which specs to run', () => {
+    const workDir = makeTmpDir();
+    tmpDirs.push(workDir);
+    process.chdir(workDir);
+
+    const prompt = buildPrompt(agentNamed('healer'), {
+      ...context(workDir),
+      only: [path.join(workDir, 'tests', 'checkout.spec.ts')],
+    });
+
+    expect(prompt).toContain('RUN ONLY:');
+    expect(prompt).toContain('checkout.spec.ts');
+  });
+
+  it('does not tell the other agents which specs to run', () => {
+    const workDir = makeTmpDir();
+    tmpDirs.push(workDir);
+    process.chdir(workDir);
+
+    const prompt = buildPrompt(agentNamed('planner'), {
+      ...context(workDir),
+      only: [path.join(workDir, 'tests', 'checkout.spec.ts')],
+    });
+
+    expect(prompt).not.toContain('RUN ONLY:');
   });
 });
 

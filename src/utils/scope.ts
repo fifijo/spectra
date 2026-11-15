@@ -121,7 +121,11 @@ export function createScopeContext(outputPath: string, scope: Scope): void {
       exclusions
         ? fileContent.slice(0, exclusions.start) + fileContent.slice(exclusions.end)
         : fileContent
-    ).trim();
+    )
+      // The page header is metadata the run already read: it is not a
+      // requirement, and it would contradict a --page flag.
+      .replace(/^[ \t]*\*\*Page URL\*\*:.*$/m, '')
+      .trim();
 
     if (requirements) {
       lines.push('## Detailed Requirements');

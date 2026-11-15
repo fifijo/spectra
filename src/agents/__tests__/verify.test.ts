@@ -4,7 +4,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { AGENTS } from '../catalogue.js';
-import { missingOutputs, takeSnapshot } from '../verify.js';
+import { changedFiles, missingOutputs, ruleBreaches, takeSnapshot } from '../verify.js';
 
 function agentNamed(name: string) {
   const agent = AGENTS.find((a) => a.name === name);
@@ -118,5 +118,106 @@ describe('missingOutputs', () => {
     fs.writeFileSync(test, 'new', 'utf-8');
 
     expect(missingOutputs(agentNamed('generator'), outputDir, projectDir, snapshot)).toEqual([]);
+  });
+});
+
+describe('ruleBreaches', () => {
+  const tmpDirs: string[] = [];
+  let originalCwd: string;
+  let projectDir: string;
+  let outputDir: string;
+
+  beforeEach(() => {
+    originalCwd = process.cwd();
+    projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'spectra-rules-'));
+    tmpDirs.push(projectDir);
+    process.chdir(projectDir);
+    outputDir = path.join(projectDir, '.spectra', 'output');
+    fs.mkdirSync(outputDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    process.chdir(originalCwd);
+    for (const dir of tmpDirs) {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+    tmpDirs.length = 0;
+  });
+
+  function write(relative: string, content: string): string {
+    const full = path.join(projectDir, relative);
+    fs.mkdirSync(path.dirname(full), { recursive: true });
+    fs.writeFileSync(full, content, 'utf-8');
+    return full;
+  }
+
+  it('says nothing when the files obey the rule', () => {
+    const snapshot = takeSnapshot(AGENTS, outputDir, projectDir);
+    write(path.join('tests', 'login.spec.ts'), 'await expect(page).toBeVisible();');
+
+    expect(ruleBreaches(agentNamed('generator'), projectDir, snapshot)).toEqual([]);
+  });
+
+  it('names the file that breaks the rule', () => {
+    const snapshot = takeSnapshot(AGENTS, outputDir, projectDir);
+    write(path.join('tests', 'login.spec.ts'), 'test("x", async () => {});');
+
+    expect(ruleBreaches(agentNamed('generator'), projectDir, snapshot)).toEqual([
+      'tests/login.spec.ts: a test has to assert something the user can see',
+    ]);
+  });
+
+  it('leaves the files of an earlier run alone', () => {
+    write(path.join('tests', 'login.spec.ts'), 'test("x", async () => {});');
+    const snapshot = takeSnapshot(AGENTS, outputDir, projectDir);
+
+    expect(ruleBreaches(agentNamed('generator'), projectDir, snapshot)).toEqual([]);
+  });
+});
+
+describe('changedFiles', () => {
+  const tmpDirs: string[] = [];
+  let originalCwd: string;
+  let projectDir: string;
+  let outputDir: string;
+
+  beforeEach(() => {
+    originalCwd = process.cwd();
+    projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'spectra-verify-'));
+    tmpDirs.push(projectDir);
+    process.chdir(projectDir);
+    outputDir = path.join(projectDir, '.spectra', 'output');
+    fs.mkdirSync(outputDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    process.chdir(originalCwd);
+    for (const dir of tmpDirs) {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+    tmpDirs.length = 0;
+  });
+
+  function write(relative: string, content = 'x'): string {
+    const full = path.join(projectDir, relative);
+    fs.mkdirSync(path.dirname(full), { recursive: true });
+    fs.writeFileSync(full, content, 'utf-8');
+    return full;
+  }
+
+  it('lists the files the run wrote, and only those', () => {
+    write(path.join('tests', 'old.spec.ts'));
+    const snapshot = takeSnapshot(AGENTS, outputDir, projectDir);
+    const fresh = write(path.join('tests', 'new.spec.ts'));
+
+    expect(changedFiles(path.join(projectDir, 'tests'), snapshot, '.spec.ts')).toEqual([fresh]);
+  });
+
+  it('leaves out the files of another kind', () => {
+    const snapshot = takeSnapshot(AGENTS, outputDir, projectDir);
+    write(path.join('tests', 'new.spec.ts'));
+    write(path.join('tests', 'helper.ts'));
+
+    expect(changedFiles(path.join(projectDir, 'tests'), snapshot, '.spec.ts')).toHaveLength(1);
   });
 });

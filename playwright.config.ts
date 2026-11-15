@@ -63,7 +63,9 @@ export default defineConfig({
       )
     : undefined,
   reporter: [
-    ['html', { outputFolder: '.spectra/output/reports' }],
+    // The HTML report has a folder of its own: the reporter wipes it when the
+    // run starts, and the Healing Report lives next to it.
+    ['html', { outputFolder: '.spectra/output/reports/html' }],
     ['json', { outputFile: '.spectra/output/reports/results.json' }],
     ['list'],
   ],
@@ -85,6 +87,8 @@ export default defineConfig({
     baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    // A failing test leaves a video next to its screenshot and its trace.
+    video: 'retain-on-failure',
     testIdAttribute: 'data-testid',
   },
 

@@ -4,7 +4,7 @@ import path from 'node:path';
 
 import type { CliMode } from '../utils/detect-mode.js';
 import { logger } from '../utils/logger.js';
-import { type Agent, SCOPE_CONTEXT } from './catalogue.js';
+import { type Agent, SCOPE_CONTEXT, SHARED_CONTEXT } from './catalogue.js';
 import { projectPath } from './verify.js';
 
 export interface RunContext {
@@ -14,6 +14,8 @@ export interface RunContext {
   /** Absolute path of the installed agents dir. */
   agentsDir: string;
   debug: boolean;
+  /** The specs the Agent that runs the suite must run. */
+  only?: string[];
 }
 
 const POLL_INTERVAL_MS = 500;
@@ -114,6 +116,7 @@ export function buildPrompt(agent: Agent, ctx: RunContext): string {
 
   const lines = [
     `SCOPE: First check ${projectPath(path.join(ctx.agentsDir, SCOPE_CONTEXT))} for constraints.`,
+    `CONTEXT: Read ${projectPath(path.join(ctx.agentsDir, SHARED_CONTEXT))} for the project layout.`,
     `INSTRUCTIONS: Read ${projectPath(path.join(ctx.agentsDir, agent.name, 'AGENT.md'))} for full details.`,
   ];
 
@@ -122,6 +125,12 @@ export function buildPrompt(agent: Agent, ctx: RunContext): string {
 
   const writes = [...inOutputDir(agent.outputs), ...agent.projectOutputs];
   if (writes.length > 0) lines.push(`WRITE TO: ${writes.join(', ')}`);
+
+  // The Agent that runs the suite runs the specs this run wrote: the rest of
+  // the suite belongs to the user.
+  if (agent.runsTests && ctx.only && ctx.only.length > 0) {
+    lines.push(`RUN ONLY: ${ctx.only.map(projectPath).join(', ')} (the specs this run wrote)`);
+  }
 
   lines.push(`When complete, create: ${inOutputDir([agent.completionSignal])[0]}`);
 

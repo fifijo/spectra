@@ -90,7 +90,12 @@ npx spectra-test-automation -u http://localhost:5173 --debug
 |-------|------|--------|
 | 🔵 Planner | Explores app | `.spectra/output/plans/test-plan.md` (the Plan) |
 | 🟢 Generator | Creates tests | `pages/`, `tests/`, `fixtures/pages.ts` |
-| 🟣 Healer | Fixes failures | `.spectra/output/reports/healing-report.md`, `.spectra/output/reports/status.json` |
+| 🟣 Healer | Fixes failures | `.spectra/output/reports/healing-report.md`, `.spectra/output/reports/status.json`, `.spectra/output/reports/results.json` |
+
+A run fails when the tests fail. The CLI reads the JSON report Playwright
+writes, so the exit code is 0 only when every test that ran passed — a suite
+where everything was skipped is not green. Native mode (`--mcp`) exits with the
+same code when the host closes the connection.
 
 ---
 
@@ -101,7 +106,7 @@ npx playwright test                      # Run all tests (chromium)
 npx playwright test --headed             # With browser visible
 npx playwright test --ui                 # Playwright UI
 npx playwright test tests/seed.spec.ts   # Run seed spec only (scaffolded by --init)
-npx playwright show-report .spectra/output/reports   # HTML report
+npx playwright show-report .spectra/output/reports/html   # HTML report
 
 # Cross-browser testing
 SPECTRA_BROWSERS=firefox npx playwright test
@@ -149,7 +154,9 @@ specs/                      # Spectrum gate docs & Markdown plans
     tests/                  # Generator completion signal
     reports/                # Results & reports
       status.json           # Machine-readable status
-    test-results/           # Playwright test results
+      results.json          # The Playwright JSON report the run reads
+    evidence/               # Screenshots and videos the Agents took
+    test-results/           # Playwright test results (screenshots, videos, traces)
     scopes/                 # One folder per Scope of a Batch
       1-login-form/         # <number>-<slug>
 pages/                      # Generated Page Objects

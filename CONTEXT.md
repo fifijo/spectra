@@ -13,8 +13,12 @@ One of the three Spectrum stages — Planner, Generator, Healer. Each is a Markd
 _Avoid_: stage, worker, step
 
 **Agent catalogue**:
-The one description of every Agent: its name, colour, emoji, the files it reads and writes, and its completion signal. Everything the CLI tells an Agent comes from here. It also says what the run verifies: the files in `outputs`, and at least one written file in each folder in `writes`. The paths in `projectOutputs` are only what the prompt asks for.
+The one description of every Agent: its name, colour, emoji, the files it reads and writes, the rules its files have to obey, and its completion signal. Everything the CLI tells an Agent comes from here. It also says what the run verifies: the files in `outputs`, at least one written file in each folder in `writes`, and the rules in `requirements`. The paths in `projectOutputs` are only what the prompt asks for.
 _Avoid_: agent table, registry, manifest, spec
+
+**Rule**:
+What the files an Agent writes have to contain. The catalogue states it and the run checks it: a spec without an assertion breaks the rule, and the run fails.
+_Avoid_: requirement, lint, style rule
 
 **Scope**:
 What a Spectrum run is pointed at: a URL, optionally a page, a feature focus, and an optional scope file. In a Batch it also has a name.

@@ -11,13 +11,14 @@ Configuration, retry limits, and triage rules for CI runs and the Healer agent.
 export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: [
-    ['html', { outputFolder: '.spectra/output/reports' }],
+    ['html', { outputFolder: '.spectra/output/reports/html' }],
     ['json', { outputFile: '.spectra/output/reports/results.json' }],
     ['list'],
   ],
   use: {
     trace: 'on-first-retry',        // capture trace on first retry
     screenshot: 'only-on-failure',   // screenshot on failure
+    video: 'retain-on-failure',      // keep the video of a failing test
   },
 });
 ```
@@ -29,16 +30,33 @@ scaffolds uploads:
 
 | Artifact | Path | When | Retention |
 |----------|------|------|------------|
-| HTML report | `.spectra/output/reports/` | every run (pass or fail) | 30 days |
+| HTML report | `.spectra/output/reports/html/` | every run (pass or fail) | 30 days |
 | JSON results | `.spectra/output/reports/results.json` | on failure | 7 days |
 | Traces | `.spectra/output/test-results/` | on failure | 7 days |
 | Screenshots | `.spectra/output/test-results/` | on failure | 7 days |
+| Videos | `.spectra/output/test-results/` | on failure | 7 days |
 
 The JSON results are what the Healer reads, so a failing run must keep them.
 Upload them on every run if your team wants the results of green runs too.
 
-> Add `video: 'retain-on-failure'` to `use` if your CI should keep videos; it
-> is not on by default.
+The HTML report has a folder of its own: the reporter wipes its output folder
+when a run starts, so a report next to it would be wiped too. The Healing
+Report and `status.json` live in `.spectra/output/reports/` and survive the
+next run.
+
+### Exit status
+
+A Spectrum run fails when the tests fail. The CLI reads the JSON report
+Playwright writes and returns a non-zero exit code when a test is still
+failing, or when the Healer never ran the suite. A suite where every test was
+skipped is not green either: nothing was proved. A green run exits 0.
+
+In native mode (`--mcp`) the server exits with the same code when the host
+closes the connection, and the last payload carries the counts.
+
+A project with its own `playwright.config.ts` has to write the JSON report to
+`.spectra/output/reports/results.json`. A config without that reporter can
+still produce it: `npx playwright test --reporter=json > .spectra/output/reports/results.json`.
 
 ## Healer retry limits
 

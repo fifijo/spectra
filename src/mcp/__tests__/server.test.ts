@@ -171,6 +171,12 @@ describe('the MCP server', () => {
       'utf-8',
     );
     fs.writeFileSync(path.join(state.outputDir, 'reports', 'status.json'), '{}', 'utf-8');
+    // The Healer causes Playwright to write the results: the run reads them.
+    fs.writeFileSync(
+      path.join(state.outputDir, 'reports', 'results.json'),
+      JSON.stringify({ stats: { expected: 2, unexpected: 0, flaky: 0, skipped: 0 } }),
+      'utf-8',
+    );
     fs.mkdirSync(path.join(cwd, 'pages'), { recursive: true });
     fs.mkdirSync(path.join(cwd, 'tests'), { recursive: true });
 
@@ -220,7 +226,11 @@ describe('the MCP server', () => {
     process.chdir(cwd);
 
     fs.mkdirSync(path.join(cwd, 'tests'), { recursive: true });
-    fs.writeFileSync(path.join(cwd, 'tests', 'login.spec.ts'), 'test', 'utf-8');
+    fs.writeFileSync(
+      path.join(cwd, 'tests', 'login.spec.ts'),
+      "test('logs in', async ({ page }) => { await expect(page).toBeVisible(); })",
+      'utf-8',
+    );
 
     state.index = 1; // the Generator is running
     const response = handleMcpRequest(
@@ -235,6 +245,31 @@ describe('the MCP server', () => {
 
     expect((response?.result as { isError?: boolean }).isError).toBeUndefined();
     expect(state.index).toBe(2);
+  });
+
+  it('refuses to finish the Generator that wrote a test with no assertion', () => {
+    const { cwd, state } = makeProject();
+    tmpDirs.push(cwd);
+    process.chdir(cwd);
+
+    fs.mkdirSync(path.join(cwd, 'tests'), { recursive: true });
+    fs.writeFileSync(path.join(cwd, 'tests', 'login.spec.ts'), 'test("x", async () => {});');
+
+    state.index = 1; // the Generator is running
+    const response = handleMcpRequest(
+      {
+        jsonrpc: '2.0',
+        id: 16,
+        method: 'tools/call',
+        params: { name: 'spectra_done', arguments: { agent: 'generator' } },
+      },
+      state,
+    );
+    const payload = toolPayload(response?.result);
+
+    expect((response?.result as { isError?: boolean }).isError).toBe(true);
+    expect(String(payload.error)).toContain('break the rules');
+    expect(state.index).toBe(1);
   });
 
   it('refuses a plan that was already there when the run started', () => {
@@ -276,6 +311,35 @@ describe('the MCP server', () => {
     expect(state.index).toBe(0);
   });
 
+  it('says what the Playwright config has to write when there are no results', () => {
+    const { cwd, state } = makeProject();
+    tmpDirs.push(cwd);
+    process.chdir(cwd);
+
+    fs.mkdirSync(path.join(state.outputDir, 'reports'), { recursive: true });
+    fs.writeFileSync(
+      path.join(state.outputDir, 'reports', 'healing-report.md'),
+      '# Report',
+      'utf-8',
+    );
+    fs.writeFileSync(path.join(state.outputDir, 'reports', 'status.json'), '{}', 'utf-8');
+    state.index = AGENTS.length - 1;
+
+    const response = handleMcpRequest(
+      {
+        jsonrpc: '2.0',
+        id: 15,
+        method: 'tools/call',
+        params: { name: 'spectra_done', arguments: { agent: 'healer' } },
+      },
+      state,
+    );
+    const payload = toolPayload(response?.result);
+
+    expect(payload.error).toContain('did not write everything');
+    expect(String(payload.hint)).toContain('has to write the JSON report');
+  });
+
   it('says nothing for a notification', () => {
     const { state } = makeProject();
     tmpDirs.push(state.outputDir);
@@ -286,6 +350,92 @@ describe('the MCP server', () => {
     );
 
     expect(response).toBeNull();
+  });
+
+  it('tells the Healer which specs to run', () => {
+    const { cwd, state } = makeProject();
+    tmpDirs.push(cwd);
+    process.chdir(cwd);
+
+    fs.mkdirSync(path.join(cwd, 'tests'), { recursive: true });
+    fs.writeFileSync(
+      path.join(cwd, 'tests', 'login.spec.ts'),
+      "test('x', async ({ page }) => { await expect(page).toBeVisible(); });",
+      'utf-8',
+    );
+    state.index = AGENTS.length - 1; // the Healer is running
+
+    const response = handleMcpRequest(
+      { jsonrpc: '2.0', id: 13, method: 'tools/call', params: { name: 'spectra_next' } },
+      state,
+    );
+    const payload = toolPayload(response?.result);
+
+    expect(String(payload.prompt)).toContain('RUN ONLY:');
+    expect(String(payload.prompt)).toContain('login.spec.ts');
+  });
+
+  it('says what the tests did when the Spectrum ends', () => {
+    const { cwd, state } = makeProject();
+    tmpDirs.push(cwd);
+    process.chdir(cwd);
+
+    fs.mkdirSync(path.join(state.outputDir, 'reports'), { recursive: true });
+    fs.writeFileSync(
+      path.join(state.outputDir, 'reports', 'results.json'),
+      JSON.stringify({ stats: { expected: 4, unexpected: 1, flaky: 0, skipped: 0 } }),
+      'utf-8',
+    );
+    state.index = AGENTS.length; // the Spectrum is over
+
+    const response = handleMcpRequest(
+      { jsonrpc: '2.0', id: 14, method: 'tools/call', params: { name: 'spectra_next' } },
+      state,
+    );
+    const payload = toolPayload(response?.result);
+
+    expect(payload.done).toBe(true);
+    expect(payload.results).toBe('4 passed, 1 failed, 0 flaky, 0 skipped');
+  });
+
+  it('resolves with the state of the suite when the host disconnects', async () => {
+    const { cwd, state } = makeProject();
+    tmpDirs.push(cwd);
+    process.chdir(cwd);
+
+    fs.mkdirSync(path.join(state.outputDir, 'reports'), { recursive: true });
+    fs.writeFileSync(
+      path.join(state.outputDir, 'reports', 'results.json'),
+      JSON.stringify({ stats: { expected: 2, unexpected: 1, flaky: 0, skipped: 0 } }),
+      'utf-8',
+    );
+
+    const input = new PassThrough();
+    const output = new PassThrough();
+    const served = serveMcp(state, input, output);
+    input.end();
+
+    await expect(served).resolves.toBe(false);
+  });
+
+  it('resolves green when every test passed', async () => {
+    const { cwd, state } = makeProject();
+    tmpDirs.push(cwd);
+    process.chdir(cwd);
+
+    fs.mkdirSync(path.join(state.outputDir, 'reports'), { recursive: true });
+    fs.writeFileSync(
+      path.join(state.outputDir, 'reports', 'results.json'),
+      JSON.stringify({ stats: { expected: 2, unexpected: 0, flaky: 0, skipped: 0 } }),
+      'utf-8',
+    );
+
+    const input = new PassThrough();
+    const output = new PassThrough();
+    const served = serveMcp(state, input, output);
+    input.end();
+
+    await expect(served).resolves.toBe(true);
   });
 
   it('answers requests that arrive over stdio', () => {

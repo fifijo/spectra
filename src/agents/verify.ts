@@ -138,11 +138,39 @@ export function missingOutputs(
 }
 
 /**
+ * The files an Agent wrote that break a rule of the catalogue.
+ * A rule says what the files have to contain, not that they have to exist:
+ * only the files this run touched are judged.
+ */
+export function ruleBreaches(agent: Agent, projectRoot: string, snapshot: Snapshot): string[] {
+  const breaches: string[] = [];
+
+  for (const rule of agent.requirements ?? []) {
+    const folder = path.join(projectRoot, rule.folder);
+    for (const file of changedFiles(folder, snapshot, rule.extension)) {
+      if (!fs.readFileSync(file, 'utf-8').includes(rule.contains)) {
+        breaches.push(`${projectPath(file)}: ${rule.why}`);
+      }
+    }
+  }
+
+  return breaches;
+}
+
+/**
  * How many files under a folder the run created or changed.
  * A declaration file is not a page object, so it does not count.
  */
 export function countChanged(dir: string, snapshot: Snapshot, ext: string): number {
+  return changedFiles(dir, snapshot, ext).length;
+}
+
+/**
+ * The files under a folder the run created or changed.
+ * A declaration file is not a page object, so it does not count.
+ */
+export function changedFiles(dir: string, snapshot: Snapshot, ext: string): string[] {
   return listFiles(dir).filter(
     (file) => file.endsWith(ext) && !file.endsWith('.d.ts') && changedSince(file, snapshot),
-  ).length;
+  );
 }

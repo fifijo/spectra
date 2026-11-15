@@ -16,7 +16,7 @@ answers and that the page has a title.
 
 ## Assertion rules
 
-1. **Minimum assertions** - Every `test()` block must contain at least one `expect()` call that validates a **business-visible** outcome (not just "element exists").
+1. **Minimum assertions** - Every `test()` block must contain at least one `expect()` call that validates a **business-visible** outcome (not just "element exists"). The run checks the first half of this: a spec file the Generator wrote has to contain an assertion, and the run fails when it does not.
 2. **No empty tests** - A test that only navigates without asserting is rejected.
 3. **Semantic locators** - Only `getByRole`, `getByLabel`, `getByTestId`, `getByText` are allowed. CSS selectors and XPath are rejected.
 4. **No hard-coded waits** - `page.waitForTimeout()` is not allowed; use Playwright auto-waiting or explicit `waitFor` conditions.
@@ -74,6 +74,8 @@ skips a required one.
 - Tests go in `tests/<feature>.spec.ts`.
 - Fixtures are updated in `fixtures/pages.ts`.
 - Imports use the fixtures pattern (`import { test, expect } from '../fixtures/pages.js'`) when available.
+- The files have to pass the project's own formatter and linter, like the rest
+  of the project does.
 
 ## PR process
 

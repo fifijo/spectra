@@ -23,6 +23,7 @@
 │       ├── plans/            # The Plan
 │       ├── tests/            # The Generator's completion signal
 │       ├── reports/          # Results & healing reports
+│       ├── evidence/         # Screenshots and videos the Agents took
 │       └── test-results/     # Playwright artifacts
 └── playwright.config.ts
 ```
@@ -32,6 +33,18 @@ Agents communicate via files:
 - Planner → Generator: `.spectra/output/plans/test-plan.md`
 - Generator → Healer: `tests/`, `pages/`
 - Healer → Reports: `.spectra/output/reports/`
+
+## The browser
+
+The Agents explore the application in a browser. The tools come from the
+Playwright MCP server: `browser_navigate`, `browser_snapshot`,
+`browser_take_screenshot` and the rest.
+
+- If your host lists MCP tools directly, call them by name.
+- If your host exposes MCP tools through a code-mode executor, call them from
+  there: `tools.playwright.browser_navigate({ url: "..." })`.
+- If the tools are really not there, write the gap into your output. Never
+  invent what the application looks like.
 
 ## Completion Signals
 - Planner done: `.spectra/output/plans/.complete`

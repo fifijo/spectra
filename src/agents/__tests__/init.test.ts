@@ -6,11 +6,26 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PROJECT_DIRS, PROJECT_IGNORES } from '../../utils/layout.js';
 import { ensureGitignore, initAgents, scaffold } from '../init.js';
 
+// The fixtures of this test live in a folder of their own: two runs of the
+// suite must not write over each other's templates.
+const { templateDir, packageDir } = vi.hoisted(() => {
+  const { mkdtempSync } = require('node:fs');
+  const { tmpdir } = require('node:os');
+  const { join } = require('node:path');
+  return {
+    templateDir: mkdtempSync(join(tmpdir(), 'spectra-templates-')),
+    packageDir: mkdtempSync(join(tmpdir(), 'spectra-package-')),
+  };
+});
+
 // We need to mock TEMPLATE_DIR to point to our test fixtures
 vi.mock('../../utils/constants.js', () => ({
-  TEMPLATE_DIR: '/tmp/spectra-test-templates',
-  PACKAGE_ROOT: '/tmp/spectra-test-package',
+  TEMPLATE_DIR: templateDir,
+  PACKAGE_ROOT: packageDir,
 }));
+
+// The mocked constants, so the tests can use the same folders.
+const { TEMPLATE_DIR, PACKAGE_ROOT } = await import('../../utils/constants.js');
 
 vi.mock('../../utils/logger.js', () => ({
   logger: {
@@ -73,7 +88,7 @@ function setupTemplates(templateRoot: string): void {
 
 describe('initAgents', () => {
   const tmpDirs: string[] = [];
-  const templateDir = '/tmp/spectra-test-templates';
+  const templateDir = TEMPLATE_DIR;
 
   beforeEach(() => {
     setupTemplates(templateDir);
@@ -220,7 +235,7 @@ describe('initAgents', () => {
 
 describe('scaffold', () => {
   const tmpDirs: string[] = [];
-  const templateDir = '/tmp/spectra-test-templates';
+  const templateDir = TEMPLATE_DIR;
 
   beforeEach(() => {
     setupTemplates(templateDir);
@@ -283,7 +298,7 @@ describe('scaffold', () => {
     const projectRoot = makeTmpDir();
     tmpDirs.push(projectRoot);
 
-    const packageRoot = '/tmp/spectra-test-package';
+    const packageRoot = PACKAGE_ROOT;
     const specsSource = path.join(packageRoot, 'specs');
     fs.mkdirSync(specsSource, { recursive: true });
     fs.writeFileSync(path.join(specsSource, 'PLANNER-GATE.md'), '# Planner Gate', 'utf-8');
@@ -408,7 +423,7 @@ describe('scaffold', () => {
     const projectRoot = makeTmpDir();
     tmpDirs.push(projectRoot);
 
-    const packageRoot = '/tmp/spectra-test-package';
+    const packageRoot = PACKAGE_ROOT;
     const guidesSource = path.join(packageRoot, 'docs');
     fs.mkdirSync(guidesSource, { recursive: true });
     fs.writeFileSync(path.join(guidesSource, 'BATCH-CONFIG.md'), '# Batch Config', 'utf-8');

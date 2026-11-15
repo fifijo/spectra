@@ -192,7 +192,7 @@ Reads the Plan and generates Page Object classes and test files.
 
 Runs tests, detects failures, inspects UI, and automatically fixes broken locators.
 
-**Output:** `.spectra/output/reports/healing-report.md`, `.spectra/output/reports/status.json`
+**Output:** `.spectra/output/reports/healing-report.md`, `.spectra/output/reports/status.json`, `.spectra/output/reports/results.json`
 
 </td>
 </tr>
@@ -259,11 +259,19 @@ Generated:
   Page Objects: 3
   Test files: 2
 
+Results: 12 passed, 0 failed, 0 flaky, 0 skipped
+
 Commands:
   npx playwright test                                  Run all tests
   npx playwright test --ui                             Run with UI
-  npx playwright show-report .spectra/output/reports   View report
+  npx playwright show-report .spectra/output/reports/html   View report
 ```
+
+The run reads the JSON report Playwright writes, so it fails when the tests
+fail: `SPECTRUM COMPLETE` means the suite is green — nothing failed and
+something passed — and the exit code is 0 only then. A suite where every test
+was skipped is not green either: nothing was proved. In native mode (`--mcp`)
+the server exits with the same code when your host closes the connection.
 
 Each Agent's own output — exploration, file writes, test runs — goes to
 `.spectra/output/<agent>.log`. Add `--debug` to mirror it to the terminal.
@@ -288,10 +296,9 @@ npx spectra-test-automation \
 ```
 
 The Planner explores only the payment form and the Generator writes tests only
-for it. The Healer is not scoped: it runs the whole suite with
-`playwright test`, and may repair any Page Object or test it finds broken —
-including tests an earlier run generated. The rest of the page is ignored while
-exploring.
+for it. The Healer runs only the specs this run wrote — the rest of your suite
+is yours — and may repair any Page Object or test it finds broken among them.
+The rest of the page is ignored while exploring.
 
 ### Scope File
 
@@ -363,9 +370,12 @@ generated tests run with it, and it is what puts the report and the test
 results where Spectra expects them:
 
 - the HTML report goes to `.spectra/output/reports`, so
-  `npx playwright show-report .spectra/output/reports` finds it
+  `npx playwright show-report .spectra/output/reports/html` finds it
 - the JSON results the Healer reads go to
-  `.spectra/output/reports/results.json`
+  `.spectra/output/reports/results.json` — a config of your own has to write
+  them there too
+- a failing test leaves a screenshot, a video and a trace in
+  `.spectra/output/test-results/`
 - `SPECTRA_BROWSERS` picks the browsers, `SPECTRA_TAGS` filters the run by tag
 - `SPECTRA_URL` sets the base URL the tests navigate to (the config falls back
   to `http://localhost:5173`)

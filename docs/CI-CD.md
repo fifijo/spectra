@@ -25,7 +25,8 @@ repository, not to your project.
 | `test-artifacts` | `.spectra/output/test-results/`, `.spectra/output/reports/results.json` | on failure | 7 days |
 
 The JSON results are what the Healer reads, so a failed run keeps them.
-`specs/CI-HEALER-POLICY.md` has the whole policy.
+They also tell the Spectrum whether the run was green: the CLI exits non-zero
+when a test is still failing. `specs/CI-HEALER-POLICY.md` has the whole policy.
 
 ## Configuration
 

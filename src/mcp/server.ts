@@ -15,9 +15,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { type Agent, SCOPE_CONTEXT } from '../agents/catalogue.js';
+import { type Agent, SCOPE_CONTEXT, TEST_RESULTS } from '../agents/catalogue.js';
+import { describeResults, isGreen as isGreenSuite, readResults } from '../agents/results.js';
 import { buildPrompt, type RunContext } from '../agents/runner.js';
-import { missingOutputs, projectPath, type Snapshot } from '../agents/verify.js';
+import {
+  changedFiles,
+  missingOutputs,
+  projectPath,
+  ruleBreaches,
+  type Snapshot,
+} from '../agents/verify.js';
 import { PACKAGE_ROOT } from '../utils/constants.js';
 
 const PROTOCOL_VERSION = '2024-11-05';
@@ -94,6 +101,10 @@ function brief(agent: Agent, state: McpState): Record<string, unknown> {
     outputDir: state.outputDir,
     agentsDir: state.agentsDir,
     debug: false,
+    // The Agent that runs the suite runs the specs this run wrote.
+    only: agent.runsTests
+      ? changedFiles(path.join(state.projectRoot, 'tests'), state.snapshot, '.spec.ts')
+      : undefined,
   };
 
   const instructionsPath = path.join(state.agentsDir, agent.name, 'AGENT.md');
@@ -119,6 +130,15 @@ function textResult(payload: unknown, isError = false): McpResponse['result'] {
   return {
     content: [{ type: 'text', text: JSON.stringify(payload, null, 2) }],
     ...(isError ? { isError: true } : {}),
+  };
+}
+
+/** The Spectrum is over: say what the tests did. */
+function finished(state: McpState): Record<string, unknown> {
+  return {
+    done: true,
+    message: 'The Spectrum is complete.',
+    results: describeResults(readResults(path.join(state.outputDir, TEST_RESULTS))),
   };
 }
 
@@ -163,7 +183,7 @@ export function handleMcpRequest(request: McpRequest, state: McpState): McpRespo
       if (tool === 'spectra_next') {
         const agent = currentAgent(state);
         if (!agent) {
-          return reply(textResult({ done: true, message: 'The Spectrum is complete.' }));
+          return reply(textResult(finished(state)));
         }
         return reply(textResult(brief(agent, state)));
       }
@@ -193,11 +213,30 @@ export function handleMcpRequest(request: McpRequest, state: McpState): McpRespo
 
         const missing = missingOutputs(agent, state.outputDir, state.projectRoot, state.snapshot);
         if (missing.length > 0) {
+          const resultsPath = projectPath(path.join(state.outputDir, TEST_RESULTS));
           return reply(
             textResult(
               {
                 error: `The ${agent.name} did not write everything the catalogue declares.`,
                 missing,
+                ...(missing.includes(resultsPath)
+                  ? {
+                      hint: `The Playwright config has to write the JSON report to ${resultsPath}: the run reads it to know whether the tests passed. A config without that reporter can still produce it: npx playwright test --reporter=json > ${resultsPath}`,
+                    }
+                  : {}),
+              },
+              true,
+            ),
+          );
+        }
+
+        const breaches = ruleBreaches(agent, state.projectRoot, state.snapshot);
+        if (breaches.length > 0) {
+          return reply(
+            textResult(
+              {
+                error: `The ${agent.name} wrote files that break the rules of the catalogue.`,
+                breaches,
               },
               true,
             ),
@@ -211,13 +250,7 @@ export function handleMcpRequest(request: McpRequest, state: McpState): McpRespo
 
         state.index += 1;
         const next = currentAgent(state);
-        return reply(
-          textResult(
-            next
-              ? { done: false, ...brief(next, state) }
-              : { done: true, message: 'The Spectrum is complete.' },
-          ),
-        );
+        return reply(textResult(next ? { done: false, ...brief(next, state) } : finished(state)));
       }
 
       return reply(textResult({ error: `Unknown tool: ${String(tool)}` }, true));
@@ -244,12 +277,15 @@ function serverVersion(): string {
 /**
  * Serve MCP over stdio: newline-delimited JSON-RPC on stdin and stdout.
  * The streams are parameters so the loop can be tested without a process.
+ *
+ * Resolves when the host closes the connection, with the state of the suite:
+ * the run is green only when every test passed.
  */
 export function serveMcp(
   state: McpState,
   input: NodeJS.ReadableStream,
   output: NodeJS.WritableStream,
-): void {
+): Promise<boolean> {
   let buffer = '';
 
   input.setEncoding('utf-8');
@@ -263,10 +299,19 @@ export function serveMcp(
       newline = buffer.indexOf('\n');
     }
   });
-  input.on('end', () => {
-    const line = buffer.trim();
-    if (line) writeResponse(output, line, state);
+  return new Promise((resolve) => {
+    input.on('end', () => {
+      const line = buffer.trim();
+      if (line) writeResponse(output, line, state);
+      // The host is done: the exit code says whether the suite is green.
+      resolve(isGreen(state));
+    });
   });
+}
+
+/** Whether the last test run left a suite without failures. */
+function isGreen(state: McpState): boolean {
+  return isGreenSuite(readResults(path.join(state.outputDir, TEST_RESULTS)));
 }
 
 function writeResponse(output: NodeJS.WritableStream, line: string, state: McpState): void {

@@ -19,6 +19,7 @@ You are the **Healer Agent** in the Spectra system. Your job is to run tests, de
 ## Output
 - Fixed test files
 - Fixed Page Objects
+- Test results: `.spectra/output/reports/results.json` (the Playwright JSON report your run writes)
 - Healing report: `.spectra/output/reports/healing-report.md`
 - Status file: `.spectra/output/reports/status.json`
 
@@ -26,18 +27,29 @@ You are the **Healer Agent** in the Spectra system. Your job is to run tests, de
 
 ### Step 1: Run Tests
 ```bash
-pnpm exec playwright test
+npx playwright test
 ```
 
 The Playwright config writes the JSON results to `.spectra/output/reports/results.json`.
 Do **not** pass `--reporter` on the command line: it replaces the config reporters and
 the results file is then never written.
 
+If the file is missing after the run, the config has no JSON reporter. Write the
+report yourself:
+```bash
+npx playwright test --reporter=json > .spectra/output/reports/results.json
+```
+
+Run only the specs this run wrote: the prompt lists them under RUN ONLY. The rest of
+the suite belongs to the user — do not repair it. When the prompt lists none, run
+the whole suite.
+
 ### Step 2: Analyze Failures
 For each failed test:
 - Error message
 - Failed locator/assertion
-- Screenshot (if available)
+- The artifacts of that failure in `.spectra/output/test-results/`: the screenshot,
+  the video and the trace Playwright kept
 
 ### Step 3: Diagnose with MCP
 Use Playwright MCP to investigate:
@@ -45,6 +57,16 @@ Use Playwright MCP to investigate:
 browser_navigate to the failing page
 browser_snapshot to see current state
 ```
+
+The browser tools come from the Playwright MCP server: `browser_navigate`,
+`browser_snapshot`, `browser_take_screenshot` and the rest.
+
+- If your host lists MCP tools directly, call them by name.
+- If your host exposes MCP tools through a code-mode executor, look them up in
+  the tool catalog and call them from there, for example
+  `tools.playwright.browser_navigate({ url: "http://localhost:5173" })`.
+- If they are really not there, say so in the Healing Report and fix the test
+  from the failure message alone.
 
 Compare:
 - Expected element (from test code)
@@ -69,7 +91,7 @@ Classify the failure (see **Failure triage**) and report it for human review.
 ### Step 5: Verify Fix
 Re-run the specific test:
 ```bash
-pnpm exec playwright test [test-file]
+npx playwright test [test-file]
 ```
 
 ### Step 6: Document

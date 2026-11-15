@@ -106,7 +106,7 @@ npx spectra-test-automation --url http://localhost:5173
 ┌─────────────────────────────────────────────────────────────────┐
 │  🟣 HEALER                                                      │
 │                                                                 │
-│  1. Runs: pnpm exec playwright test                            │
+│  1. Runs: npx playwright test                                  │
 │                                                                 │
 │  2. Sees failure:                                               │
 │     "Can't find element: getByRole('button', {name: 'Log in'})│
@@ -256,7 +256,7 @@ npx playwright test
 npx playwright test tests/seed.spec.ts  # scaffolded by --init
 
 # View report
-npx playwright show-report .spectra/output/reports
+npx playwright show-report .spectra/output/reports/html
 
 # Check generated files
 ls pages/    # Page Objects
@@ -293,7 +293,7 @@ answers and that the page has a title.
 | `npx playwright test --headed` | Run with visible browser |
 | `npx playwright test --ui` | Run with Playwright UI |
 | `npx playwright test --grep @tag` | Filter by tag |
-| `npx playwright show-report .spectra/output/reports` | View HTML report |
+| `npx playwright show-report .spectra/output/reports/html` | View HTML report |
 
 ## Environment Variables
 
@@ -450,10 +450,12 @@ spectra/
 │       ├── tests/               # The Generator's completion signal
 │       ├── reports/
 │       │   ├── healing-report.md
-│       │   └── status.json      # Machine-readable status
+│       │   ├── status.json      # Machine-readable status
+│       │   └── results.json     # The Playwright JSON report the run reads
+│       ├── evidence/            # Screenshots and videos the Agents took
 │       ├── scopes/              # One folder per Scope in a Batch
 │       │   └── 1-login-form/    # <number>-<slug>
-│       └── test-results/        # Playwright test results
+│       └── test-results/        # Playwright test results (screenshots, videos, traces)
 ├── fixtures/
 │   └── pages.ts                 # Reusable test fixtures
 ├── pages/                       # Generated Page Objects

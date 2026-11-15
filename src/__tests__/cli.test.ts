@@ -25,7 +25,9 @@ vi.mock('../utils/detect-mode.js', () => ({
 }));
 
 vi.mock('../mcp/server.js', () => ({
-  serveMcp: vi.fn(),
+  // The server resolves when the host closes the connection, with the state of
+  // the suite.
+  serveMcp: vi.fn(async () => true),
 }));
 
 vi.mock('../utils/logger.js', async (importOriginal) => ({
@@ -57,6 +59,11 @@ function makeTmpDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'spectra-cli-'));
 }
 
+/** What Playwright writes when every test passed. */
+const GREEN_RESULTS = {
+  stats: { expected: 3, unexpected: 0, flaky: 0, skipped: 0 },
+};
+
 /** Make a mocked Agent write the files the catalogue says it writes. */
 function writeDeclaredOutputs(agentName: string, content = 'x'): void {
   const output = path.join(process.cwd(), '.spectra', 'output');
@@ -65,13 +72,17 @@ function writeDeclaredOutputs(agentName: string, content = 'x'): void {
   for (const file of agent.outputs) {
     const full = path.join(output, file);
     fs.mkdirSync(path.dirname(full), { recursive: true });
-    fs.writeFileSync(full, content, 'utf-8');
+    // The Healer causes Playwright to write the results: the run reads them.
+    const body = file === 'reports/results.json' ? JSON.stringify(GREEN_RESULTS) : content;
+    fs.writeFileSync(full, body, 'utf-8');
   }
   // A folder the Agent must have written into.
   for (const dir of agent.writes) {
     const full = path.join(process.cwd(), dir, `${agent.name}.spec.ts`);
     fs.mkdirSync(path.dirname(full), { recursive: true });
-    fs.writeFileSync(full, content, 'utf-8');
+    // The file has to satisfy the rules the catalogue states for it.
+    const body = agent.requirements?.length ? `expect(page).toBeVisible(); ${content}` : content;
+    fs.writeFileSync(full, body, 'utf-8');
   }
 }
 
@@ -140,6 +151,14 @@ describe('run', () => {
 
       expect(ok).toBe(true);
       expect(serveMcp).toHaveBeenCalled();
+    });
+
+    it('fails the MCP run when the tests failed', async () => {
+      vi.mocked(serveMcp).mockResolvedValueOnce(false);
+
+      const ok = await run({ mcp: true, url: 'http://localhost:5173' });
+
+      expect(ok).toBe(false);
     });
   });
 
@@ -663,6 +682,111 @@ describe('run', () => {
       expect(logger.separator).toHaveBeenCalledWith('blue', '❌ SPECTRUM FAILED');
     });
 
+    it('fails the run when the tests failed', async () => {
+      vi.mocked(runAgent).mockImplementation(async (agent) => {
+        writeDeclaredOutputs(agent.name);
+        if (agent.name === 'healer') {
+          fs.writeFileSync(
+            path.join(process.cwd(), '.spectra', 'output', 'reports', 'results.json'),
+            JSON.stringify({ stats: { expected: 3, unexpected: 2, flaky: 0, skipped: 0 } }),
+            'utf-8',
+          );
+        }
+      });
+
+      const ok = await run({ url: 'http://localhost:5173' });
+
+      expect(ok).toBe(false);
+      expect(logger.separator).toHaveBeenCalledWith(
+        'blue',
+        expect.stringContaining('TESTS FAILING'),
+      );
+    });
+
+    it('fails the run when the Healer never ran the suite', async () => {
+      vi.mocked(runAgent).mockImplementation(async (agent) => {
+        writeDeclaredOutputs(agent.name);
+        if (agent.name === 'healer') {
+          fs.writeFileSync(
+            path.join(process.cwd(), '.spectra', 'output', 'reports', 'results.json'),
+            'not a report',
+            'utf-8',
+          );
+        }
+      });
+
+      const ok = await run({ url: 'http://localhost:5173' });
+
+      expect(ok).toBe(false);
+      expect(logger.plain).toHaveBeenCalledWith(expect.stringContaining('no results'));
+    });
+
+    it('says what the Playwright config has to write when there are no results', async () => {
+      vi.mocked(runAgent).mockImplementation(async (agent) => {
+        writeDeclaredOutputs(agent.name);
+        if (agent.name === 'healer') {
+          // The Healer never ran the suite: there is no JSON report.
+          fs.rmSync(path.join(process.cwd(), '.spectra', 'output', 'reports', 'results.json'));
+        }
+      });
+
+      const ok = await run({ url: 'http://localhost:5173' });
+
+      expect(ok).toBe(false);
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining('has to write the JSON report'),
+      );
+    });
+
+    it('prints what the tests did', async () => {
+      await run({ url: 'http://localhost:5173' });
+
+      expect(logger.plain).toHaveBeenCalledWith(
+        expect.stringContaining('3 passed, 0 failed, 0 flaky, 0 skipped'),
+      );
+    });
+
+    it('is not a green run when every test was skipped', async () => {
+      vi.mocked(runAgent).mockImplementation(async (agent) => {
+        writeDeclaredOutputs(agent.name);
+        if (agent.name === 'healer') {
+          fs.writeFileSync(
+            path.join(process.cwd(), '.spectra', 'output', 'reports', 'results.json'),
+            JSON.stringify({ stats: { expected: 0, unexpected: 0, flaky: 0, skipped: 1 } }),
+            'utf-8',
+          );
+        }
+      });
+
+      const ok = await run({ url: 'http://localhost:5173' });
+
+      expect(ok).toBe(false);
+      expect(logger.separator).toHaveBeenCalledWith(
+        'blue',
+        expect.stringContaining('NO TESTS PASSED'),
+      );
+    });
+
+    it('fails the run when the Generator wrote a test that asserts nothing', async () => {
+      vi.mocked(runAgent).mockImplementation(async (agent) => {
+        writeDeclaredOutputs(agent.name);
+        if (agent.name === 'generator') {
+          fs.writeFileSync(
+            path.join(process.cwd(), 'tests', 'empty.spec.ts'),
+            'test("nothing", async () => {});',
+            'utf-8',
+          );
+        }
+      });
+
+      const ok = await run({ url: 'http://localhost:5173' });
+
+      expect(ok).toBe(false);
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining('a test has to assert something the user can see'),
+      );
+    });
+
     it('removes the status file of a previous run when no agent writes one', async () => {
       const statusPath = path.join(tmpDir, '.spectra', 'output', 'reports', 'status.json');
       fs.mkdirSync(path.dirname(statusPath), { recursive: true });
@@ -706,6 +830,58 @@ describe('run', () => {
         .join('\n');
       expect(printed).toContain('npx playwright test');
       expect(printed).not.toContain('pnpm test');
+    });
+  });
+
+  describe('the agent that runs the suite', () => {
+    it('runs only the specs this run wrote', async () => {
+      vi.mocked(runAgent).mockImplementation(async (agent) => {
+        writeDeclaredOutputs(agent.name);
+        if (agent.name === 'generator') {
+          fs.writeFileSync(
+            path.join(tmpDir, 'tests', 'checkout.spec.ts'),
+            'test("x", async ({ page }) => { await expect(page).toBeVisible(); });',
+            'utf-8',
+          );
+        }
+      });
+
+      await run({ url: 'http://localhost:5173' });
+
+      const call = vi.mocked(runAgent).mock.calls.find(([agent]) => agent.name === 'healer');
+      expect(call?.[1].only).toContain(path.join(tmpDir, 'tests', 'checkout.spec.ts'));
+    });
+
+    it('does not send the specs of another scope to the Healer', async () => {
+      const batchPath = path.join(tmpDir, 'batch.json');
+      fs.writeFileSync(
+        batchPath,
+        JSON.stringify({ url: 'http://localhost:5173', scopes: [{ name: 'A' }, { name: 'B' }] }),
+        'utf-8',
+      );
+      let scope = 0;
+      vi.mocked(runAgent).mockImplementation(async (agent) => {
+        writeDeclaredOutputs(agent.name);
+        if (agent.name === 'planner') scope += 1;
+        if (agent.name === 'generator') {
+          fs.writeFileSync(
+            path.join(tmpDir, 'tests', `scope-${scope}.spec.ts`),
+            'test("x", async ({ page }) => { await expect(page).toBeVisible(); });',
+            'utf-8',
+          );
+        }
+      });
+
+      await run({ batch: 'batch.json' });
+
+      const healerCalls = vi
+        .mocked(runAgent)
+        .mock.calls.filter(([agent]) => agent.name === 'healer');
+      expect(healerCalls).toHaveLength(2);
+      expect(healerCalls[0][1].only).toContain(path.join(tmpDir, 'tests', 'scope-1.spec.ts'));
+      expect(healerCalls[1][1].only).toContain(path.join(tmpDir, 'tests', 'scope-2.spec.ts'));
+      // The second scope does not repair the tests of the first one.
+      expect(healerCalls[1][1].only).not.toContain(path.join(tmpDir, 'tests', 'scope-1.spec.ts'));
     });
   });
 
